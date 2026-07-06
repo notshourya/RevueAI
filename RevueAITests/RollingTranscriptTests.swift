@@ -7,14 +7,48 @@ struct RollingTranscriptTests {
         AudioSegment(speakerHint: hint, text: text)
     }
 
-    @Test func drainReturnsOnlyFreshSegmentsOnce() {
+    @Test func peekDoesNotAdvanceTheWatermark() {
+        let transcript = RollingTranscript()
+        transcript.append(seg("one"))
+        #expect(transcript.peekNewSegments().map(\.text) == ["one"])
+        #expect(transcript.peekNewSegments().map(\.text) == ["one"])
+    }
+
+    @Test func commitAdvancesByCount() {
         let transcript = RollingTranscript()
         transcript.append(seg("one"))
         transcript.append(seg("two"))
-        #expect(transcript.drainNewSegments().map(\.text) == ["one", "two"])
-        #expect(transcript.drainNewSegments().isEmpty)
+        let fresh = transcript.peekNewSegments()
+        transcript.commitExtracted(count: fresh.count)
+        #expect(transcript.peekNewSegments().isEmpty)
         transcript.append(seg("three"))
-        #expect(transcript.drainNewSegments().map(\.text) == ["three"])
+        #expect(transcript.peekNewSegments().map(\.text) == ["three"])
+    }
+
+    @Test func failedExtractionKeepsSegmentsQueued() {
+        let transcript = RollingTranscript()
+        transcript.append(seg("one"))
+        _ = transcript.peekNewSegments()   // extraction ran but failed: no commit
+        transcript.append(seg("two"))
+        #expect(transcript.peekNewSegments().map(\.text) == ["one", "two"])
+    }
+
+    @Test func segmentsArrivingDuringExtractionStayQueued() {
+        let transcript = RollingTranscript()
+        transcript.append(seg("one"))
+        let fresh = transcript.peekNewSegments()
+        transcript.append(seg("two"))          // arrives while the model call is in flight
+        transcript.commitExtracted(count: fresh.count)
+        #expect(transcript.peekNewSegments().map(\.text) == ["two"])
+    }
+
+    @Test func commitNeverOverruns() {
+        let transcript = RollingTranscript()
+        transcript.append(seg("one"))
+        transcript.commitExtracted(count: 99)
+        #expect(transcript.peekNewSegments().isEmpty)
+        transcript.append(seg("two"))
+        #expect(transcript.peekNewSegments().map(\.text) == ["two"])
     }
 
     @Test func fullTextFormatsAttributedLines() {
@@ -27,9 +61,9 @@ struct RollingTranscriptTests {
     @Test func clearResetsEverything() {
         let transcript = RollingTranscript()
         transcript.append(seg("one"))
-        _ = transcript.drainNewSegments()
+        _ = transcript.peekNewSegments()
         transcript.clear()
         #expect(transcript.isEmpty)
-        #expect(transcript.drainNewSegments().isEmpty)
+        #expect(transcript.peekNewSegments().isEmpty)
     }
 }

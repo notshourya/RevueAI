@@ -69,4 +69,28 @@ struct CaptureCoordinatorTests {
         let notes = try context.fetch(FetchDescriptor<ReviewNote>())
         #expect(notes.count == 1)
     }
+
+    @Test func failedLiveExtractionRetriesTheSameChunk() async throws {
+        let context = try makeInMemoryContext()
+        let model = FakeReviewModel()
+        model.extractResults = [
+            .failure(FakeModelError()),
+            .success(.empty),
+        ]
+        let coordinator = CaptureCoordinator(
+            transcription: MockTranscriptionService(phrases: ["hello there"], interval: .milliseconds(5)),
+            systemTranscription: FailingTranscriptionService(),
+            model: model
+        )
+        coordinator.captureSystemAudio = false
+        await coordinator.start(context: context)
+        try await Task.sleep(for: .milliseconds(50))
+        await coordinator.pause()    // pause() runs a live extraction — this one fails
+        // Stop directly from paused (resuming would make the mock replay its
+        // phrases and change the chunk). stop() runs another extraction —
+        // the same chunk must be re-sent because the failure didn't commit.
+        await coordinator.stop()
+        #expect(model.extractCalls.count == 2)
+        #expect(model.extractCalls[0].chunk == model.extractCalls[1].chunk)
+    }
 }

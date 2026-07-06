@@ -20,13 +20,19 @@ final class RollingTranscript {
         segments.append(segment)
     }
 
-    /// Segments captured since the last live-extraction pass, and advances the
-    /// watermark so each segment is sent to the live model exactly once.
-    func drainNewSegments() -> [AudioSegment] {
+    /// Segments captured since the last committed extraction. Does NOT advance
+    /// the watermark — call `commitExtracted(count:)` after the model call
+    /// succeeds, so a failed extraction leaves the chunk queued for retry.
+    func peekNewSegments() -> [AudioSegment] {
         guard lastExtractedIndex < segments.count else { return [] }
-        let fresh = Array(segments[lastExtractedIndex..<segments.count])
-        lastExtractedIndex = segments.count
-        return fresh
+        return Array(segments[lastExtractedIndex...])
+    }
+
+    /// Marks `count` peeked segments as extracted. Counting (rather than
+    /// draining) means segments that arrived while the model call was in
+    /// flight stay queued.
+    func commitExtracted(count: Int) {
+        lastExtractedIndex = min(lastExtractedIndex + count, segments.count)
     }
 
     /// The full transcript as attributed lines, for the final polish pass.

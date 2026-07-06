@@ -242,13 +242,14 @@ final class CaptureCoordinator {
 
     private func runLiveExtraction() async {
         guard modelAvailable, let note = currentNote, let context = modelContext else { return }
-        let fresh = transcript.drainNewSegments()
+        let fresh = transcript.peekNewSegments()
         guard !fresh.isEmpty else { return }
         let chunk = fresh
             .map { "[\($0.speakerHint.rawValue)] \($0.text)" }
             .joined(separator: "\n")
         do {
             try await liveExtractor.extractAndCheckpoint(chunk: chunk, into: note, context: context)
+            transcript.commitExtracted(count: fresh.count)
             livePoints = note.sortedActionItems.map(\.oneLiner)
                 + note.sortedOpenQuestions.map { "? \($0.text)" }
         } catch {
