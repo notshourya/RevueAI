@@ -1060,8 +1060,11 @@ struct TranscriptWindowerTests {
     }
 
     /// 60 segments of ~40 characters each ≈ 600+ estimated tokens.
-    private var longTranscript: [AudioSegment] {
-        (0..<60).map { seg("Segment number \($0) with some padding text") }
+    /// Stored (not computed) so repeated accesses compare equal — AudioSegment's
+    /// Equatable includes its UUID, so a computed property would mint fresh
+    /// non-equal segments on every access.
+    private let longTranscript: [AudioSegment] = (0..<60).map {
+        AudioSegment(speakerHint: .reviewer, text: "Segment number \($0) with some padding text")
     }
 
     @Test func emptyInputYieldsNoWindows() {
@@ -1130,33 +1133,39 @@ enum TranscriptWindower {
     static let overlapSegments = 2
     static let charactersPerToken = 4
 
+    /// "[hint] text\n" — brackets, space, newline ≈ 4 extra characters.
+    private static func characters(_ segment: AudioSegment) -> Int {
+        segment.text.count + segment.speakerHint.rawValue.count + 4
+    }
+
     static func estimatedTokens(_ segments: [AudioSegment]) -> Int {
-        let characters = segments.reduce(0) {
-            // "[hint] text\n" — brackets, space, newline ≈ 4 extra characters.
-            $0 + $1.text.count + $1.speakerHint.rawValue.count + 4
-        }
-        return characters / charactersPerToken
+        segments.reduce(0) { $0 + characters($1) } / charactersPerToken
     }
 
     /// A single segment larger than the budget still gets a window of its own
     /// (never dropped) — the backend may truncate, but content is not lost here.
+    ///
+    /// The accumulator tracks characters (not per-segment floored tokens) so
+    /// the budget check is exactly `estimatedTokens(window) <= tokenBudget` —
+    /// summing floored per-segment costs would under-count and let windows
+    /// exceed the budget by rounding drift.
     static func windows(for segments: [AudioSegment], tokenBudget: Int) -> [[AudioSegment]] {
         guard !segments.isEmpty else { return [] }
         guard estimatedTokens(segments) > tokenBudget else { return [segments] }
 
         var result: [[AudioSegment]] = []
         var current: [AudioSegment] = []
-        var currentTokens = 0
+        var currentCharacters = 0
         for segment in segments {
-            let cost = estimatedTokens([segment])
-            if !current.isEmpty, currentTokens + cost > tokenBudget {
+            let cost = characters(segment)
+            if !current.isEmpty, (currentCharacters + cost) / charactersPerToken > tokenBudget {
                 result.append(current)
                 let overlap = Array(current.suffix(overlapSegments))
                 current = overlap
-                currentTokens = estimatedTokens(overlap)
+                currentCharacters = overlap.reduce(0) { $0 + characters($1) }
             }
             current.append(segment)
-            currentTokens += cost
+            currentCharacters += cost
         }
         if current.count > overlapSegments || result.isEmpty {
             result.append(current)
@@ -1216,8 +1225,9 @@ struct FinalPolisherTests {
     }
 
     /// 60 segments ≈ 600+ estimated tokens — several windows at budget 100.
-    private var longTranscript: [AudioSegment] {
-        (0..<60).map { seg("Segment number \($0) with some padding text") }
+    /// Stored so repeated accesses yield the identical (Equatable-equal) array.
+    private let longTranscript: [AudioSegment] = (0..<60).map {
+        AudioSegment(speakerHint: .presenter, text: "Segment number \($0) with some padding text")
     }
 
     @Test func successAppliesSummaryVerdictAndItems() async throws {
