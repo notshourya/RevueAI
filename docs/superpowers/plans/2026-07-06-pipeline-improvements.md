@@ -1956,6 +1956,15 @@ Add to `RevueAITests/CaptureCoordinatorTests.swift`:
         // Nothing pending → never extract, no matter how long it's been.
         #expect(!CaptureCoordinator.shouldExtract(
             pending: 0, elapsedSinceLastRun: .seconds(120), threshold: 6, interval: .seconds(20)))
+        // After a failed attempt the threshold shortcut is suppressed — a
+        // stuck-high pending count must not hot-loop retries every tick.
+        #expect(!CaptureCoordinator.shouldExtract(
+            pending: 10, elapsedSinceLastRun: .seconds(2), threshold: 6, interval: .seconds(20),
+            lastAttemptFailed: true))
+        // Once the full interval elapses, a retry is allowed even after failure.
+        #expect(CaptureCoordinator.shouldExtract(
+            pending: 10, elapsedSinceLastRun: .seconds(20), threshold: 6, interval: .seconds(20),
+            lastAttemptFailed: true))
     }
 ```
 
@@ -2031,13 +2040,18 @@ Replace `startCadence()` and add the trigger helper:
 ```swift
     /// Hybrid trigger: a burst of new segments extracts immediately; otherwise
     /// the interval flushes whatever trickled in. Silence costs nothing.
+    /// After a failed attempt the threshold shortcut is suppressed (failure
+    /// leaves pending high, and without this the cadence would retry every
+    /// tick); retries fall back to interval pacing.
     nonisolated static func shouldExtract(
         pending: Int,
         elapsedSinceLastRun: Duration,
         threshold: Int,
-        interval: Duration
+        interval: Duration,
+        lastAttemptFailed: Bool = false
     ) -> Bool {
         guard pending > 0 else { return false }
+        if lastAttemptFailed { return elapsedSinceLastRun >= interval }
         return pending >= threshold || elapsedSinceLastRun >= interval
     }
 
@@ -2051,7 +2065,8 @@ Replace `startCadence()` and add the trigger helper:
                     pending: self.transcript.pendingCount,
                     elapsedSinceLastRun: ContinuousClock.now - lastRun,
                     threshold: self.extractionSegmentThreshold,
-                    interval: self.extractionInterval
+                    interval: self.extractionInterval,
+                    lastAttemptFailed: self.lastExtractionFailed
                 ) {
                     await self.runLiveExtraction()
                     lastRun = ContinuousClock.now
@@ -2060,6 +2075,19 @@ Replace `startCadence()` and add the trigger helper:
             }
         }
     }
+```
+
+Add a stored property next to the timing constants:
+
+```swift
+    /// Whether the most recent live-extraction attempt threw — suppresses the
+    /// cadence's threshold shortcut so failures retry at interval pacing.
+    private var lastExtractionFailed = false
+```
+
+Reset it in `start(context:)` alongside the other per-session state (`errorMessage = nil` block): `lastExtractionFailed = false`.
+
+Set it in `runLiveExtraction()`: add `lastExtractionFailed = false` immediately after `transcript.commitExtracted(count: fresh.count)`, and `lastExtractionFailed = true` as the first line of the `catch` block.
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
