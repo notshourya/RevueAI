@@ -11,6 +11,7 @@ final class FakeReviewModel: ReviewLanguageModel {
     struct PolishCall { let transcript: String; let livePoints: String }
 
     var isAvailable = true
+    var contextTokenBudget = 3000
     var extractResults: [Result<ExtractedPoints, FakeModelError>] = []
     var polishResults: [Result<PolishedReview, FakeModelError>] = []
     private(set) var extractCalls: [ExtractCall] = []

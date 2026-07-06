@@ -1,6 +1,10 @@
 import Foundation
 import SwiftData
 
+enum PolishError: Error {
+    case allWindowsFailed
+}
+
 /// Runs the final polish pass on stop: sends the whole transcript + live points
 /// to the backend, then replaces the note's live-extracted content with the
 /// consolidated, de-duplicated result (summary, verdict, in-depth action items,
@@ -13,13 +17,21 @@ final class FinalPolisher {
         self.model = model
     }
 
-    func polish(note: ReviewNote, transcript: String, context: ModelContext) async {
+    func polish(note: ReviewNote, segments: [AudioSegment], context: ModelContext) async {
         note.status = .processing
         try? context.save()
 
         let livePoints = LiveExtractor.knownPointsSummary(for: note)
         do {
-            let result = try await model.polish(transcript: transcript, livePoints: livePoints)
+            let result: PolishedReview
+            if TranscriptWindower.estimatedTokens(segments) <= model.contextTokenBudget {
+                result = try await model.polish(
+                    transcript: Self.transcriptText(for: segments),
+                    livePoints: livePoints
+                )
+            } else {
+                result = try await windowedPolish(segments: segments, livePoints: livePoints)
+            }
             apply(result, to: note, context: context)
             // On-device is the default backend for now; mark accordingly so the
             // note can be re-polished by PCC later when that path is enabled.
@@ -29,6 +41,56 @@ final class FinalPolisher {
             note.status = .processedOnDevice
         }
         try? context.save()
+    }
+
+    static func transcriptText(for segments: [AudioSegment]) -> String {
+        segments
+            .map { "[\($0.speakerHint.rawValue)] \($0.text)" }
+            .joined(separator: "\n")
+    }
+
+    /// Map-reduce fallback for transcripts exceeding the backend's budget:
+    /// extract enriched candidates per window (seeded with the live points so
+    /// windows don't re-report known items), then consolidate the compact
+    /// candidate list in one polish call.
+    private func windowedPolish(segments: [AudioSegment], livePoints: String) async throws -> PolishedReview {
+        let windows = TranscriptWindower.windows(for: segments, tokenBudget: model.contextTokenBudget)
+        var known = livePoints
+        var failures = 0
+        for window in windows {
+            do {
+                let points = try await model.extractPoints(
+                    fromChunk: Self.transcriptText(for: window),
+                    knownPoints: known
+                )
+                known = Self.appendingCandidates(points, to: known)
+            } catch {
+                failures += 1
+            }
+        }
+        guard failures < windows.count else { throw PolishError.allWindowsFailed }
+        let digest = """
+        POINTS PRE-EXTRACTED FROM THE FULL MEETING (the raw transcript was too \
+        long to include; consolidate these):
+        \(known.isEmpty ? "(none)" : known)
+        """
+        return try await model.polish(transcript: digest, livePoints: "")
+    }
+
+    private static func appendingCandidates(_ points: ExtractedPoints, to known: String) -> String {
+        var lines = known.isEmpty ? [] : [known]
+        for item in points.actionItems {
+            var line = "- \(item.oneLiner) (raised by \(item.attribution))"
+            if !item.supportingQuote.isEmpty { line += " — quote: \"\(item.supportingQuote)\"" }
+            lines.append(line)
+        }
+        for decision in points.decisions {
+            lines.append("• Decision: \(decision.statement) (\(decision.attribution))")
+        }
+        for question in points.openQuestions {
+            lines.append("? \(question.question) (asked by \(question.attribution))")
+        }
+        return lines.joined(separator: "\n")
     }
 
     /// Replaces live-extracted items with the consolidated final set.

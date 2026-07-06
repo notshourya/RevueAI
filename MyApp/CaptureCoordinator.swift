@@ -125,13 +125,12 @@ final class CaptureCoordinator {
 
         if let note = currentNote {
             note.durationSeconds = Double(accumulatedSeconds)
-            let full = transcript.fullText()
-            if full.isEmpty {
+            if transcript.isEmpty {
                 note.summary = "No speech was captured in this session."
                 note.status = .processedOnDevice
                 try? context.save()
             } else if modelAvailable {
-                await finalPolisher.polish(note: note, transcript: full, context: context)
+                await finalPolisher.polish(note: note, segments: transcript.segments, context: context)
             } else {
                 note.summary = "Captured, but Apple Intelligence is off — turn it on to summarize."
                 note.status = .processedOnDevice

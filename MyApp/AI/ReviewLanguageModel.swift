@@ -8,6 +8,10 @@ protocol ReviewLanguageModel: Sendable {
     /// Whether this backend is currently usable.
     var isAvailable: Bool { get }
 
+    /// Approximate prompt-token budget for a single request to this backend,
+    /// with headroom for instructions and output. Drives transcript windowing.
+    var contextTokenBudget: Int { get }
+
     /// Live pass: extract new typed points from a fresh transcript chunk,
     /// given a compact list of already-known points to avoid duplicates.
     func extractPoints(fromChunk chunk: String, knownPoints: String) async throws -> ExtractedPoints
@@ -57,6 +61,8 @@ nonisolated struct OnDeviceReviewModel: ReviewLanguageModel {
         }
     }
 
+    var contextTokenBudget: Int { 3000 }
+
     func extractPoints(fromChunk chunk: String, knownPoints: String) async throws -> ExtractedPoints {
         let session = LanguageModelSession(instructions: ReviewPrompts.liveInstructions)
         let prompt = """
@@ -95,6 +101,8 @@ nonisolated struct PrivateCloudReviewModel: ReviewLanguageModel {
         default: return false
         }
     }
+
+    var contextTokenBudget: Int { 24000 }
 
     func extractPoints(fromChunk chunk: String, knownPoints: String) async throws -> ExtractedPoints {
         let session = LanguageModelSession(
