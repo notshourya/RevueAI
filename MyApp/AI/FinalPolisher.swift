@@ -101,6 +101,7 @@ final class FinalPolisher {
         for existing in note.actionItems ?? [] { context.delete(existing) }
         for existing in note.openQuestions ?? [] { context.delete(existing) }
         for existing in note.decisions ?? [] { context.delete(existing) }
+        for existing in note.speakers ?? [] { context.delete(existing) }
 
         // Code-level dedup safety net: skip near-identical one-liners the model
         // may still emit despite the merge instructions.
@@ -155,6 +156,16 @@ final class FinalPolisher {
             record.note = note
             context.insert(record)
             decisionOrder += 1
+        }
+
+        var seenLabels: [String] = []
+        for candidate in result.speakers {
+            let label = candidate.label.trimmingCharacters(in: .whitespaces)
+            guard !label.isEmpty, !seenLabels.contains(label) else { continue }
+            seenLabels.append(label)
+            let speaker = Speaker(label: label, isPresenter: candidate.isPresenter)
+            speaker.note = note
+            context.insert(speaker)
         }
     }
 

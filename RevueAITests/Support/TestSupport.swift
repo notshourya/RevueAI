@@ -28,14 +28,16 @@ extension PolishedReview {
         verdict: GenerableVerdict = .needsChanges,
         actionItems: [PolishedActionItem] = [],
         openQuestions: [OpenQuestionCandidate] = [],
-        decisions: [DecisionCandidate] = []
+        decisions: [DecisionCandidate] = [],
+        speakers: [SpeakerCandidate] = []
     ) -> PolishedReview {
         PolishedReview(
             summary: summary,
             verdict: verdict,
             actionItems: actionItems,
             openQuestions: openQuestions,
-            decisions: decisions
+            decisions: decisions,
+            speakers: speakers
         )
     }
 }

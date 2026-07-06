@@ -47,6 +47,15 @@ struct OpenQuestionCandidate: Equatable {
     var attribution: String
 }
 
+@Generable
+struct SpeakerCandidate: Equatable {
+    @Guide(description: "The speaker's display label: a real name heard in the meeting if any, otherwise 'You' for the presenter or 'Reviewer 1', 'Reviewer 2', …")
+    var label: String
+
+    @Guide(description: "True if this speaker is the presenter (the person whose microphone was captured).")
+    var isPresenter: Bool
+}
+
 // MARK: - Final polish schema
 
 /// The typed result of the final polish pass over the whole transcript.
@@ -66,6 +75,9 @@ struct PolishedReview {
 
     @Guide(description: "The key decisions that were made, consolidated and de-duplicated.")
     var decisions: [DecisionCandidate]
+
+    @Guide(description: "The distinct speakers in the meeting, one entry each.")
+    var speakers: [SpeakerCandidate]
 }
 
 /// Constrained verdict the model must choose from; mapped to `ReviewVerdict`.

@@ -159,4 +159,21 @@ struct FinalPolisherTests {
         await polisher.polish(note: note, segments: [seg("hello")], context: context)
         #expect(note.sortedDecisions.map(\.statement) == ["Ship behind a feature flag"])
     }
+
+    @Test func populatesTheSpeakerRoster() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub(speakers: [
+            SpeakerCandidate(label: "You", isPresenter: true),
+            SpeakerCandidate(label: "Priya", isPresenter: false),
+            SpeakerCandidate(label: "Priya", isPresenter: false),   // duplicate — dropped
+        ]))]
+        let polisher = FinalPolisher(model: model)
+        await polisher.polish(note: note, segments: [seg("hello")], context: context)
+        let labels = (note.speakers ?? []).map(\.label).sorted()
+        #expect(labels == ["Priya", "You"])
+        #expect((note.speakers ?? []).first { $0.label == "You" }?.isPresenter == true)
+    }
 }

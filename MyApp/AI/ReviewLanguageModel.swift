@@ -46,6 +46,10 @@ enum ReviewPrompts {
     • Fix speaker attribution using the full conversation. Add short verbatim \
     supporting quotes only when they exist in the transcript.
     • Write a 2–4 sentence summary and an overall verdict.
+    • List the distinct speakers: use a real name when one is heard in the \
+    transcript; otherwise 'You' for the presenter and 'Reviewer 1', \
+    'Reviewer 2' for others. Attribute every action item, decision, and open \
+    question using exactly these labels. \
     Be faithful to the transcript; never fabricate details or quotes.
     """
 }
