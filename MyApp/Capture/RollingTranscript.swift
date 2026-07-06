@@ -16,6 +16,9 @@ final class RollingTranscript {
     var count: Int { segments.count }
     var isEmpty: Bool { segments.isEmpty }
 
+    /// Segments appended but not yet committed as extracted.
+    var pendingCount: Int { segments.count - lastExtractedIndex }
+
     func append(_ segment: AudioSegment) {
         segments.append(segment)
     }

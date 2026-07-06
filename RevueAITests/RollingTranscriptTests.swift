@@ -58,6 +58,16 @@ struct RollingTranscriptTests {
         #expect(transcript.fullText() == "[presenter] hello\n[reviewer] hi there")
     }
 
+    @Test func pendingCountTracksUncommittedSegments() {
+        let transcript = RollingTranscript()
+        #expect(transcript.pendingCount == 0)
+        transcript.append(seg("one"))
+        transcript.append(seg("two"))
+        #expect(transcript.pendingCount == 2)
+        transcript.commitExtracted(count: 1)
+        #expect(transcript.pendingCount == 1)
+    }
+
     @Test func clearResetsEverything() {
         let transcript = RollingTranscript()
         transcript.append(seg("one"))

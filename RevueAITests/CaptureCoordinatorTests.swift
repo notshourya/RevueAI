@@ -93,4 +93,33 @@ struct CaptureCoordinatorTests {
         #expect(model.extractCalls.count == 2)
         #expect(model.extractCalls[0].chunk == model.extractCalls[1].chunk)
     }
+
+    @Test func startPrewarmsTheModel() async throws {
+        let context = try makeInMemoryContext()
+        let model = FakeReviewModel()
+        let coordinator = CaptureCoordinator(
+            transcription: MockTranscriptionService(phrases: [], interval: .milliseconds(5)),
+            systemTranscription: FailingTranscriptionService(),
+            model: model
+        )
+        coordinator.captureSystemAudio = false
+        await coordinator.start(context: context)
+        #expect(model.prewarmCount == 1)
+        await coordinator.stop()
+    }
+
+    @Test func extractionTriggerLogic() {
+        // Below threshold, interval not due → wait.
+        #expect(!CaptureCoordinator.shouldExtract(
+            pending: 3, elapsedSinceLastRun: .seconds(5), threshold: 6, interval: .seconds(20)))
+        // Threshold reached → extract even if the interval isn't due.
+        #expect(CaptureCoordinator.shouldExtract(
+            pending: 6, elapsedSinceLastRun: .seconds(1), threshold: 6, interval: .seconds(20)))
+        // Interval due with at least one pending → extract.
+        #expect(CaptureCoordinator.shouldExtract(
+            pending: 1, elapsedSinceLastRun: .seconds(20), threshold: 6, interval: .seconds(20)))
+        // Nothing pending → never extract, no matter how long it's been.
+        #expect(!CaptureCoordinator.shouldExtract(
+            pending: 0, elapsedSinceLastRun: .seconds(120), threshold: 6, interval: .seconds(20)))
+    }
 }

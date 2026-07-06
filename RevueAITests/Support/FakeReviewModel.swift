@@ -16,6 +16,9 @@ final class FakeReviewModel: ReviewLanguageModel {
     var polishResults: [Result<PolishedReview, FakeModelError>] = []
     private(set) var extractCalls: [ExtractCall] = []
     private(set) var polishCalls: [PolishCall] = []
+    private(set) var prewarmCount = 0
+
+    func prewarm() { prewarmCount += 1 }
 
     func extractPoints(fromChunk chunk: String, knownPoints: String) async throws -> ExtractedPoints {
         extractCalls.append(ExtractCall(chunk: chunk, knownPoints: knownPoints))

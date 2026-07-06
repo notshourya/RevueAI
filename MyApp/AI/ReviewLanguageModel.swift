@@ -19,6 +19,14 @@ protocol ReviewLanguageModel: Sendable {
     /// Final pass: consolidate the whole transcript + live points into a
     /// polished review (summary, verdict, in-depth action items, questions).
     func polish(transcript: String, livePoints: String) async throws -> PolishedReview
+
+    /// Optional warm-up before the first live call (e.g. load the on-device
+    /// model into memory). Fire-and-forget; default is a no-op.
+    func prewarm()
+}
+
+extension ReviewLanguageModel {
+    func prewarm() {}
 }
 
 // MARK: - Shared prompt text
@@ -66,6 +74,10 @@ nonisolated struct OnDeviceReviewModel: ReviewLanguageModel {
     }
 
     var contextTokenBudget: Int { 3000 }
+
+    func prewarm() {
+        LanguageModelSession(instructions: ReviewPrompts.liveInstructions).prewarm()
+    }
 
     func extractPoints(fromChunk chunk: String, knownPoints: String) async throws -> ExtractedPoints {
         let session = LanguageModelSession(instructions: ReviewPrompts.liveInstructions)

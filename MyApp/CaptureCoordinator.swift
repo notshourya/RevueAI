@@ -45,6 +45,7 @@ final class CaptureCoordinator {
     private let attribution: SpeakerAttribution
     private let liveExtractor: LiveExtractor
     private let finalPolisher: FinalPolisher
+    private let model: any ReviewLanguageModel
 
     private var transcript = RollingTranscript()
     private var currentNote: ReviewNote?
@@ -62,6 +63,8 @@ final class CaptureCoordinator {
 
     private let firstExtractionDelay: Duration = .seconds(12)
     private let extractionInterval: Duration = .seconds(20)
+    private let extractionSegmentThreshold = 6
+    private let cadenceTick: Duration = .seconds(2)
 
     init(
         transcription: (any TranscriptionProviding)? = nil,
@@ -74,6 +77,7 @@ final class CaptureCoordinator {
         self.attribution = attribution
         self.liveExtractor = LiveExtractor(model: model)
         self.finalPolisher = FinalPolisher(model: model)
+        self.model = model
         self.modelAvailable = model.isAvailable
     }
 
@@ -93,6 +97,7 @@ final class CaptureCoordinator {
         lastTitle = nil
         transcript = RollingTranscript()
         modelContext = context
+        model.prewarm()
 
         let note = ReviewNote(title: Self.defaultTitle(), date: .now, status: .capturing)
         context.insert(note)
@@ -198,13 +203,34 @@ final class CaptureCoordinator {
         segmentStartedAt = nil
     }
 
+    /// Hybrid trigger: a burst of new segments extracts immediately; otherwise
+    /// the interval flushes whatever trickled in. Silence costs nothing.
+    nonisolated static func shouldExtract(
+        pending: Int,
+        elapsedSinceLastRun: Duration,
+        threshold: Int,
+        interval: Duration
+    ) -> Bool {
+        guard pending > 0 else { return false }
+        return pending >= threshold || elapsedSinceLastRun >= interval
+    }
+
     private func startCadence() {
         cadenceTask = Task { [weak self] in
             guard let self else { return }
             try? await Task.sleep(for: self.firstExtractionDelay)
+            var lastRun = ContinuousClock.now
             while !Task.isCancelled {
-                await self.runLiveExtraction()
-                try? await Task.sleep(for: self.extractionInterval)
+                if Self.shouldExtract(
+                    pending: self.transcript.pendingCount,
+                    elapsedSinceLastRun: ContinuousClock.now - lastRun,
+                    threshold: self.extractionSegmentThreshold,
+                    interval: self.extractionInterval
+                ) {
+                    await self.runLiveExtraction()
+                    lastRun = ContinuousClock.now
+                }
+                try? await Task.sleep(for: self.cadenceTick)
             }
         }
     }
