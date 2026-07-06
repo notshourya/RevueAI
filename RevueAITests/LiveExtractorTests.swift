@@ -96,4 +96,28 @@ struct LiveExtractorTests {
         #expect(note.sortedDecisions.map(\.statement) == ["Use SwiftData over Core Data"])
         #expect(note.sortedDecisions.first?.attribution == "presenter")
     }
+
+    @Test func skipsNearDuplicateLivePoints() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let existing = ActionItem(oneLiner: "Add retry logic to the upload path", order: 0)
+        existing.note = note
+        context.insert(existing)
+        let model = FakeReviewModel()
+        model.extractResults = [.success(ExtractedPoints(
+            actionItems: [
+                ActionItemCandidate(oneLiner: "Add retry logic to upload path", attribution: "R", supportingQuote: ""),
+                ActionItemCandidate(oneLiner: "Add pagination to the list endpoint", attribution: "R", supportingQuote: ""),
+            ],
+            decisions: [],
+            openQuestions: []
+        ))]
+        let extractor = LiveExtractor(model: model)
+        try await extractor.extractAndCheckpoint(chunk: "[reviewer] talk", into: note, context: context)
+        #expect(note.sortedActionItems.map(\.oneLiner) == [
+            "Add retry logic to the upload path",
+            "Add pagination to the list endpoint",
+        ])
+    }
 }

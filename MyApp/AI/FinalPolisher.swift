@@ -108,9 +108,8 @@ final class FinalPolisher {
         var seen: [String] = []
         var order = 0
         for item in result.actionItems {
-            let key = Self.normalize(item.oneLiner)
-            guard !key.isEmpty, !seen.contains(where: { Self.similar($0, key) }) else { continue }
-            seen.append(key)
+            guard !PointDedup.containsSimilar(item.oneLiner, in: seen) else { continue }
+            seen.append(item.oneLiner)
             let actionItem = ActionItem(
                 oneLiner: item.oneLiner,
                 rationale: item.rationale,
@@ -129,9 +128,8 @@ final class FinalPolisher {
         var seenQuestions: [String] = []
         var questionOrder = 0
         for question in result.openQuestions {
-            let key = Self.normalize(question.question)
-            guard !key.isEmpty, !seenQuestions.contains(where: { Self.similar($0, key) }) else { continue }
-            seenQuestions.append(key)
+            guard !PointDedup.containsSimilar(question.question, in: seenQuestions) else { continue }
+            seenQuestions.append(question.question)
             let openQuestion = OpenQuestion(
                 text: question.question,
                 attribution: question.attribution,
@@ -145,9 +143,8 @@ final class FinalPolisher {
         var seenDecisions: [String] = []
         var decisionOrder = 0
         for decision in result.decisions {
-            let key = Self.normalize(decision.statement)
-            guard !key.isEmpty, !seenDecisions.contains(where: { Self.similar($0, key) }) else { continue }
-            seenDecisions.append(key)
+            guard !PointDedup.containsSimilar(decision.statement, in: seenDecisions) else { continue }
+            seenDecisions.append(decision.statement)
             let record = Decision(
                 statement: decision.statement,
                 attribution: decision.attribution,
@@ -167,24 +164,5 @@ final class FinalPolisher {
             speaker.note = note
             context.insert(speaker)
         }
-    }
-
-    /// Normalizes a phrase to lowercase alphanumeric words for comparison.
-    private static func normalize(_ text: String) -> String {
-        text.lowercased()
-            .components(separatedBy: CharacterSet.alphanumerics.inverted)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-    }
-
-    /// True when two normalized phrases are near-duplicates — one contains the
-    /// other, or they share at least 80% of the smaller phrase's words.
-    private static func similar(_ a: String, _ b: String) -> Bool {
-        if a == b || a.contains(b) || b.contains(a) { return true }
-        let wordsA = Set(a.split(separator: " "))
-        let wordsB = Set(b.split(separator: " "))
-        guard !wordsA.isEmpty, !wordsB.isEmpty else { return false }
-        let overlap = wordsA.intersection(wordsB).count
-        return Double(overlap) / Double(min(wordsA.count, wordsB.count)) >= 0.8
     }
 }

@@ -26,8 +26,11 @@ final class LiveExtractor {
         let known = Self.knownPointsSummary(for: note, limit: Self.liveKnownPointsLimit)
         let points = try await model.extractPoints(fromChunk: chunk, knownPoints: known)
 
+        var knownOneLiners = (note.actionItems ?? []).map(\.oneLiner)
         var order = note.actionItems?.count ?? 0
         for candidate in points.actionItems {
+            guard !PointDedup.containsSimilar(candidate.oneLiner, in: knownOneLiners) else { continue }
+            knownOneLiners.append(candidate.oneLiner)
             let quotes = candidate.supportingQuote.isEmpty ? [] : [candidate.supportingQuote]
             let item = ActionItem(
                 oneLiner: candidate.oneLiner,
@@ -40,8 +43,11 @@ final class LiveExtractor {
             order += 1
         }
 
+        var knownQuestions = (note.openQuestions ?? []).map(\.text)
         var questionOrder = note.openQuestions?.count ?? 0
         for candidate in points.openQuestions {
+            guard !PointDedup.containsSimilar(candidate.question, in: knownQuestions) else { continue }
+            knownQuestions.append(candidate.question)
             let question = OpenQuestion(
                 text: candidate.question,
                 attribution: candidate.attribution,
@@ -52,8 +58,11 @@ final class LiveExtractor {
             questionOrder += 1
         }
 
+        var knownDecisions = (note.decisions ?? []).map(\.statement)
         var decisionOrder = note.decisions?.count ?? 0
         for candidate in points.decisions {
+            guard !PointDedup.containsSimilar(candidate.statement, in: knownDecisions) else { continue }
+            knownDecisions.append(candidate.statement)
             let decision = Decision(
                 statement: candidate.statement,
                 attribution: candidate.attribution,
