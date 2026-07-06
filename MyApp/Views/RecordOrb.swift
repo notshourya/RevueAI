@@ -74,7 +74,9 @@ struct RecordOrb: View {
         .buttonStyle(.plain)
         .disabled(disabled)
         .opacity(disabled ? 0.5 : 1)
-        .onHover { withAnimation(.spring(duration: 0.25)) { hover = $0 } }
+        .onHover { isHovering in
+            withAnimation(.spring(duration: 0.25)) { hover = isHovering }
+        }
         .onAppear {
             withAnimation(.easeInOut(duration: 2.2).repeatForever(autoreverses: true)) { pulse = true }
         }

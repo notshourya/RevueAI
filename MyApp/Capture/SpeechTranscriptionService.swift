@@ -11,10 +11,25 @@ import AVFoundation
 /// from the `progressiveTranscription` preset are filtered out.
 @MainActor
 final class SpeechTranscriptionService: TranscriptionProviding {
-    enum TranscriptionError: Error {
+    enum TranscriptionError: LocalizedError {
+        case missingUsageDescription
         case unsupportedLocale
         case micPermissionDenied
         case noMicrophone
+
+        var errorDescription: String? {
+            switch self {
+            case .missingUsageDescription:
+                return "Microphone access isn’t configured. Add an “NSMicrophoneUsageDescription” "
+                    + "string and the App Sandbox “Audio Input” capability to the target, then rebuild."
+            case .unsupportedLocale:
+                return "On-device transcription isn’t available for the current language."
+            case .micPermissionDenied:
+                return "Microphone access was denied. Enable it in System Settings › Privacy & Security › Microphone."
+            case .noMicrophone:
+                return "No microphone was found."
+            }
+        }
     }
 
     private var analyzer: SpeechAnalyzer?
@@ -24,6 +39,12 @@ final class SpeechTranscriptionService: TranscriptionProviding {
     private var resultsTask: Task<Void, Never>?
 
     func start() async throws -> AsyncThrowingStream<String, Error> {
+        // 0. Fail gracefully instead of letting the OS hard-abort the process:
+        //    accessing the mic without a usage-description string is fatal.
+        guard Bundle.main.object(forInfoDictionaryKey: "NSMicrophoneUsageDescription") != nil else {
+            throw TranscriptionError.missingUsageDescription
+        }
+
         // 1. Microphone permission.
         guard await AVCaptureDevice.requestAccess(for: .audio) else {
             throw TranscriptionError.micPermissionDenied
@@ -63,7 +84,7 @@ final class SpeechTranscriptionService: TranscriptionProviding {
 
         // 6. Bridge finalized results into the returned stream.
         return AsyncThrowingStream { continuation in
-            resultsTask = Task { [transcriber] in
+            let task = Task { [transcriber] in
                 do {
                     for try await result in transcriber.results where result.isFinal {
                         let phrase = String(result.text.characters)
@@ -77,17 +98,25 @@ final class SpeechTranscriptionService: TranscriptionProviding {
                     continuation.finish(throwing: error)
                 }
             }
-            continuation.onTermination = { [weak self] _ in
-                Task { @MainActor in self?.resultsTask?.cancel() }
-            }
+            resultsTask = task
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
     func stop() async {
-        analysisTask?.cancel()
-        resultsTask?.cancel()
         provider?.captureSession.stopRunning()
-        try? await analyzer?.finalizeAndFinishThroughEndOfInput()
+        analysisTask?.cancel()
+
+        // Flush any remaining finalized results, bounded so we never hang if
+        // the input sequence doesn't terminate on its own.
+        let finalize = Task { [analyzer] in try? await analyzer?.finalizeAndFinishThroughEndOfInput() }
+        try? await Task.sleep(for: .seconds(2))
+        finalize.cancel()
+
+        // Let the results consumer drain naturally, then tear down.
+        resultsTask?.cancel()
+        _ = await resultsTask?.value
+
         analyzer = nil
         transcriber = nil
         provider = nil

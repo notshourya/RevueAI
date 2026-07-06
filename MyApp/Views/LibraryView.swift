@@ -90,23 +90,50 @@ struct LibraryView: View {
     }
 
     private var gridView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(showArchived ? "Archived" : "Reviews")
-                    .font(Theme.display(26))
-                    .padding(.horizontal, 4)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150, maximum: .infinity), spacing: 12, alignment: .top)], spacing: 12) {
-                    ForEach(shownNotes) { note in
-                        NoteCard(note: note, isSelected: selection == note)
-                            .onTapGesture { selection = note }
-                            .contextMenu { rowMenu(note) }
+        GeometryReader { geo in
+            let columnCount = max(2, Int(geo.size.width / 190))
+            let columns = distributed(into: columnCount)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text(showArchived ? "Archived" : "Reviews")
+                        .font(Theme.display(26))
+                        .padding(.horizontal, 4)
+                    HStack(alignment: .top, spacing: 12) {
+                        ForEach(0..<columns.count, id: \.self) { col in
+                            VStack(spacing: 12) {
+                                ForEach(columns[col]) { note in
+                                    NoteCard(note: note, isSelected: selection == note)
+                                        .onTapGesture { selection = note }
+                                        .contextMenu { rowMenu(note) }
+                                }
+                            }
+                        }
                     }
                 }
+                .padding(16)
             }
-            .padding(16)
+            .scrollContentBackground(.hidden)
+            .scrollEdgeEffectStyle(.soft, for: .all)
         }
-        .scrollContentBackground(.hidden)
-        .scrollEdgeEffectStyle(.soft, for: .all)
+    }
+
+    /// Greedy masonry: place each review into the currently-shortest column so
+    /// heights stay balanced and cards stagger like the Shortcuts grid.
+    private func distributed(into columnCount: Int) -> [[ReviewNote]] {
+        var cols = Array(repeating: [ReviewNote](), count: columnCount)
+        var heights = Array(repeating: CGFloat(0), count: columnCount)
+        for note in shownNotes {
+            let target = heights.firstIndex(of: heights.min() ?? 0) ?? 0
+            cols[target].append(note)
+            heights[target] += estimatedHeight(note)
+        }
+        return cols
+    }
+
+    private func estimatedHeight(_ note: ReviewNote) -> CGFloat {
+        let titleLines = min(3, max(1, note.title.count / 18 + 1))
+        let bodyLines = note.summary.isEmpty ? 0 : min(6, note.summary.count / 22 + 1)
+        return CGFloat(64 + titleLines * 20 + bodyLines * 15)
     }
 
     @ViewBuilder
@@ -122,37 +149,20 @@ struct LibraryView: View {
     // MARK: - Record dock
 
     private var recordBar: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             if coordinator.isActive {
-                HStack(spacing: 10) {
-                    StateOrb(mode: coordinator.state == .processing ? .processing : .listening, size: 28)
-                        .opacity(coordinator.state == .paused ? 0.4 : 1)
-                    Text(coordinator.state == .paused ? "Paused · \(coordinator.elapsedText)" : "\(coordinator.elapsedText) · \(coordinator.capturedPhraseCount)")
-                        .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
+                Text(coordinator.state == .paused
+                     ? "Paused · \(coordinator.elapsedText)"
+                     : "\(coordinator.elapsedText) · \(coordinator.capturedPhraseCount) phrases")
+                    .font(.system(size: 12, weight: .medium, design: .rounded).monospacedDigit())
+                    .foregroundStyle(.secondary)
             }
-            Button(action: toggleCapture) {
-                HStack(spacing: 8) {
-                    Image(systemName: coordinator.isActive ? "stop.fill" : "record.circle.fill")
-                    Text(coordinator.isActive ? "Stop & Summarize" : "Record")
-                }
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(
-                    (coordinator.isActive ? Color(red: 1, green: 0.4, blue: 0.43) : Color.accentColor).gradient,
-                    in: Capsule()
-                )
-                .foregroundStyle(.white)
+            RecordOrb(isActive: coordinator.isActive, size: 54, disabled: coordinator.state == .processing) {
+                toggleCapture()
             }
-            .buttonStyle(.plain)
-            .disabled(coordinator.state == .processing)
-            .opacity(coordinator.state == .processing ? 0.6 : 1)
         }
-        .padding(14)
-        .background(.ultraThinMaterial)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
     }
 
     // MARK: - Detail
@@ -266,8 +276,7 @@ private struct NoteRow: View {
             Spacer()
         }
         .padding(14)
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Theme.cardStroke, lineWidth: 1))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 }
 
@@ -296,11 +305,11 @@ private struct NoteCard: View {
             .foregroundStyle(.secondary)
         }
         .padding(14)
-        .frame(height: 128, alignment: .topLeading)
-        .background(Theme.cardFill, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .glassEffect(isSelected ? .regular.tint(Theme.accent.opacity(0.35)) : .regular, in: .rect(cornerRadius: 18))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(isSelected ? Color.accentColor : Theme.cardStroke, lineWidth: isSelected ? 2 : 1)
+                .strokeBorder(isSelected ? Theme.accent : .clear, lineWidth: 2)
         )
         .overlay(alignment: .top) {
             RoundedRectangle(cornerRadius: 2)

@@ -13,8 +13,6 @@ struct CapturePanelView: View {
     var body: some View {
         @Bindable var coordinator = coordinator
         return VStack(spacing: 18) {
-            header
-
             if !coordinator.modelAvailable {
                 banner("Apple Intelligence is off — capture works, but summaries won't generate.",
                        icon: "sparkles", tint: .orange)
@@ -31,61 +29,21 @@ struct CapturePanelView: View {
             }
         }
         .padding(22)
-        .frame(width: 340)
-        .background(.ultraThinMaterial, in: ContainerRelativeShape())
+        .frame(width: 300)
+        .glassEffect(.regular, in: .rect(cornerRadius: 26))
         .preferredColorScheme(.dark)
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        HStack {
-            Text("RevueAI").font(Theme.display(20, .bold))
-            Spacer()
-            switch coordinator.state {
-            case .idle:       StatusPill(text: "Ready", color: .secondary)
-            case .listening:  StatusPill(text: "Listening", color: Color(red: 1, green: 0.42, blue: 0.44), pulsing: true)
-            case .paused:     StatusPill(text: "Paused", color: .secondary)
-            case .processing: StatusPill(text: "Summarizing", color: Color(red: 0.5, green: 0.6, blue: 1), pulsing: true)
-            }
-        }
     }
 
     // MARK: - Idle
 
     @ViewBuilder
     private func idleView(coordinator: CaptureCoordinator) -> some View {
-        if coordinator.lastSummary != nil {
-            summaryCard
-            startButton(compact: true)
+        VStack(spacing: 18) {
+            if coordinator.lastSummary != nil { summaryCard }
+            RecordOrb(isActive: false, size: 84) { startAction() }
+                .padding(.vertical, 4)
             participantsToggle
-        } else {
-            VStack(spacing: 18) {
-                Text("Capture a review — RevueAI extracts prioritized action items with zero recording.")
-                    .font(.system(size: 14, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-                startButton(compact: false)
-                participantsToggle
-            }
         }
-    }
-
-    private func startButton(compact: Bool) -> some View {
-        Button(action: startAction) {
-            HStack(spacing: 8) {
-                Image(systemName: "record.circle.fill")
-                Text("Start Listening")
-            }
-            .font(.system(size: 15, weight: .semibold, design: .rounded))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(Color(red: 1, green: 0.4, blue: 0.43).gradient, in: Capsule())
-            .foregroundStyle(.white)
-        }
-        .buttonStyle(.plain)
     }
 
     private var participantsToggle: some View {
@@ -190,6 +148,7 @@ struct CapturePanelView: View {
                         }
                     }
                     .frame(height: 80)
+                    .scrollEdgeEffectStyle(.soft, for: .all)
                     .onChange(of: coordinator.recentTranscript.count) {
                         withAnimation { proxy.scrollTo(coordinator.recentTranscript.count - 1, anchor: .bottom) }
                     }
@@ -208,7 +167,7 @@ struct CapturePanelView: View {
             }
         }
         .padding(12)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .glassEffect(.regular, in: .rect(cornerRadius: 14))
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
@@ -252,7 +211,7 @@ struct CapturePanelView: View {
             .foregroundStyle(.tint)
         }
         .padding(16)
-        .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 
     // MARK: - Helpers
@@ -285,16 +244,22 @@ private struct RoundControl: View {
             Image(systemName: icon)
                 .font(.system(size: 20, weight: .semibold))
                 .frame(width: 56, height: 56)
-                .background {
-                    if filled {
-                        Circle().fill(tint.gradient)
-                    } else {
-                        Circle().fill(.ultraThinMaterial)
-                        Circle().stroke(.white.opacity(0.14), lineWidth: 1)
-                    }
-                }
                 .foregroundStyle(filled ? .white : tint)
+                .modifier(RoundControlBackground(filled: filled, tint: tint))
         }
         .buttonStyle(.plain)
     }
 }
+/// Circular control background: solid tinted gradient when filled, else glass.
+private struct RoundControlBackground: ViewModifier {
+    let filled: Bool
+    let tint: Color
+    func body(content: Content) -> some View {
+        if filled {
+            content.background(Circle().fill(tint.gradient))
+        } else {
+            content.glassEffect(.regular, in: Circle())
+        }
+    }
+}
+

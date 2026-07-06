@@ -110,8 +110,7 @@ struct NoteDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .background(Color(white: 0.09), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(.white.opacity(0.05), lineWidth: 1))
+            .glassEffect(.regular, in: .rect(cornerRadius: 14))
         }
     }
 }

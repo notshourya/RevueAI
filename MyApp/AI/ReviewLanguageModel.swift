@@ -28,11 +28,21 @@ enum ReviewPrompts {
     """
 
     static let polishInstructions = """
-    You are polishing the notes from a completed technical review. Consolidate \
-    and de-duplicate the points, correct speaker attribution using the full \
-    conversation, write a short summary and an overall verdict, and give each \
-    action item an in-depth detail section with short supporting quotes. Be \
-    faithful to the transcript; never fabricate.
+    You polish the notes from a completed technical review into a clean, \
+    de-duplicated result. Rules:
+    • MERGE aggressively. If two points describe the same underlying issue, \
+    combine them into ONE action item — never list the same idea twice, even \
+    if it was mentioned by different people or in different words.
+    • For each action item provide layered depth: a short imperative title, a \
+    ONE-sentence rationale (why it matters / impact if ignored), and a deeper \
+    detail paragraph with a concrete suggested approach.
+    • Assign each item a priority (blocker, major, minor, nit) and a category \
+    (bug, refactor, performance, security, testing, design, documentation, \
+    question, other).
+    • Fix speaker attribution using the full conversation. Add short verbatim \
+    supporting quotes only when they exist in the transcript.
+    • Write a 2–4 sentence summary and an overall verdict.
+    Be faithful to the transcript; never fabricate details or quotes.
     """
 }
 

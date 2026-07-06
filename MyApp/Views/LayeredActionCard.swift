@@ -22,7 +22,7 @@ struct ActionRow: View {
                 Button(action: onToggleSelect) {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 13))
-                        .foregroundStyle(isSelected ? Color.accentColor : .tertiary)
+                        .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
                 }
                 .buttonStyle(.plain)
 
@@ -93,10 +93,10 @@ struct ActionRow: View {
             }
         }
         .padding(10)
-        .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .glassEffect(isSelected ? .regular.tint(Theme.accent.opacity(0.3)) : .regular, in: .rect(cornerRadius: 11))
         .overlay(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
-                .strokeBorder(isSelected ? Color.accentColor : .white.opacity(0.05), lineWidth: isSelected ? 1.5 : 1)
+                .strokeBorder(isSelected ? Theme.accent : .clear, lineWidth: 1.5)
         )
         .opacity(item.isDone ? 0.75 : 1)
     }

@@ -114,7 +114,10 @@ final class SystemAudioTapService: TranscriptionProviding, @unchecked Sendable {
         // 5. IO block converts realtime buffers → AnalyzerInput and yields them.
         //    Runs on a realtime audio thread; only touches the Sendable
         //    continuation and locally-captured, immutable values.
-        let converter = AnalyzerInputConverter(analyzerFormat: SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]))
+        guard let analyzerFormat = await SpeechAnalyzer.bestAvailableAudioFormat(compatibleWith: [transcriber]) else {
+            throw TapError.formatUnavailable
+        }
+        let converter = AnalyzerInputConverter(analyzerFormat: analyzerFormat)
         let ioBlock: AudioDeviceIOBlock = { _, inputData, _, _, _ in
             guard let buffer = AVAudioPCMBuffer(pcmFormat: tapFormat, bufferListNoCopy: inputData) else { return }
             if let inputs = try? converter.convert(buffer, at: nil) {

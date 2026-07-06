@@ -32,35 +32,7 @@ enum Theme {
 /// motion for a little delight.
 struct AppBackground: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in
-            let t = context.date.timeIntervalSince1970
-            let dx = Float(sin(t * 0.22)) * 0.05
-            let dy = Float(cos(t * 0.18)) * 0.05
-            let ex = Float(cos(t * 0.15)) * 0.04
-            let ey = Float(sin(t * 0.2)) * 0.04
-
-            MeshGradient(
-                width: 3, height: 3,
-                points: [
-                    [0, 0], [0.5 + ex, 0], [1, 0],
-                    [0, 0.5 + dy], [0.5 + dx, 0.5 + dy], [1, 0.5 - ey],
-                    [0, 1], [0.5 - ex, 1], [1, 1],
-                ],
-                colors: [
-                    Color(red: 0.14, green: 0.10, blue: 0.34),
-                    Color(red: 0.24, green: 0.12, blue: 0.42),
-                    Color(red: 0.10, green: 0.14, blue: 0.40),
-                    Color(red: 0.28, green: 0.13, blue: 0.40),
-                    Color(red: 0.05, green: 0.05, blue: 0.10),
-                    Color(red: 0.08, green: 0.22, blue: 0.34),
-                    Color(red: 0.32, green: 0.12, blue: 0.34),
-                    Color(red: 0.09, green: 0.12, blue: 0.36),
-                    Color(red: 0.13, green: 0.10, blue: 0.30),
-                ]
-            )
-            .overlay(Color.black.opacity(0.18)) // keep glass content readable
-        }
-        .ignoresSafeArea()
+        Color(white: 0.08).ignoresSafeArea()
     }
 }
 
@@ -73,19 +45,13 @@ struct PremiumBackground: View {
 struct GlassCard<Content: View>: View {
     var radius: CGFloat = Theme.cardRadius
     var padding: CGFloat = 14
-    var strokeOpacity: Double = 0.14
     @ViewBuilder var content: Content
 
     var body: some View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(padding)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .strokeBorder(.white.opacity(strokeOpacity), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.25), radius: 14, y: 8)
+            .glassEffect(.regular, in: .rect(cornerRadius: radius))
     }
 }
 
@@ -173,9 +139,8 @@ struct StatusPill: View {
                 .animation(pulsing ? .easeInOut(duration: 0.9).repeatForever(autoreverses: true) : .default, value: pulse)
             Text(text).font(Theme.rounded(12, .semibold))
         }
-        .padding(.horizontal, 10).padding(.vertical, 5)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(color.opacity(0.35), lineWidth: 1))
+        .padding(.horizontal, 11).padding(.vertical, 5)
+        .glassEffect(.regular.tint(color.opacity(0.28)), in: .capsule)
         .foregroundStyle(color)
         .onAppear { if pulsing { pulse = true } }
     }

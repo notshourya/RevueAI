@@ -26,6 +26,9 @@ final class ReviewNote {
     var verdict: ReviewVerdict = ReviewVerdict.pending
     var status: ProcessingStatus = ProcessingStatus.capturing
 
+    /// Whether this review has been archived (hidden from the main library).
+    var isArchived: Bool = false
+
     @Relationship(deleteRule: .cascade, inverse: \ActionItem.note)
     var actionItems: [ActionItem]? = []
 
@@ -53,10 +56,13 @@ final class ReviewNote {
         self.status = status
     }
 
-    /// Action items sorted by their capture order, unwrapping the optional
-    /// relationship CloudKit requires.
+    /// Action items sorted by priority (most urgent first), then capture order.
     var sortedActionItems: [ActionItem] {
-        (actionItems ?? []).sorted { $0.order < $1.order }
+        (actionItems ?? []).sorted {
+            $0.priority.sortRank != $1.priority.sortRank
+                ? $0.priority.sortRank < $1.priority.sortRank
+                : $0.order < $1.order
+        }
     }
 
     /// Open questions sorted by their capture order.

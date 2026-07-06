@@ -27,10 +27,9 @@ struct StateOrb: View {
                     )
                 )
                 .frame(width: size, height: size)
-                .blur(radius: size * 0.03)
+                .blur(radius: size * 0.02)
         }
         .frame(width: size, height: size)
-        .drawingGroup()
         .accessibilityHidden(true)
     }
 }

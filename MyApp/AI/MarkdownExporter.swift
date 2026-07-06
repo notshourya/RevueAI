@@ -24,9 +24,12 @@ enum MarkdownExporter {
             lines.append("## Action Items")
             lines.append("")
             for item in items {
-                var head = "- [\(item.isDone ? "x" : " ")] **\(item.oneLiner)**"
+                var head = "- [\(item.isDone ? "x" : " ")] **\(item.oneLiner)** `\(item.priority.displayName)` · \(item.category.displayName)"
                 if !item.attribution.isEmpty { head += " _(raised by \(item.attribution))_" }
                 lines.append(head)
+                if !item.rationale.isEmpty {
+                    lines.append("  - _Why:_ \(item.rationale)")
+                }
                 if !item.inDepthDetail.isEmpty {
                     lines.append("  - \(item.inDepthDetail)")
                 }

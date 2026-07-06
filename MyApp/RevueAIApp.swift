@@ -33,6 +33,8 @@ struct RevueAIApp: App {
             LibraryView()
                 .environment(coordinator)
                 .frame(minWidth: 720, minHeight: 460)
+                .tint(Theme.accent)
+                .preferredColorScheme(.dark)
         }
         .modelContainer(container)
         .defaultSize(width: 900, height: 600)
@@ -41,6 +43,8 @@ struct RevueAIApp: App {
             CapturePanelView()
                 .environment(coordinator)
                 .modelContainer(container)
+                .tint(Theme.accent)
+                .preferredColorScheme(.dark)
         } label: {
             Image(systemName: coordinator.state == .listening ? "waveform.circle.fill" : "waveform.circle")
         }

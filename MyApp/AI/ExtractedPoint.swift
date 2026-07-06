@@ -82,16 +82,71 @@ enum GenerableVerdict {
 }
 
 @Generable
+enum GenerablePriority {
+    case blocker
+    case major
+    case minor
+    case nit
+
+    var priority: ActionPriority {
+        switch self {
+        case .blocker: return .blocker
+        case .major: return .major
+        case .minor: return .minor
+        case .nit: return .nit
+        }
+    }
+}
+
+@Generable
+enum GenerableCategory {
+    case bug
+    case refactor
+    case performance
+    case security
+    case testing
+    case design
+    case documentation
+    case question
+    case other
+
+    var category: ActionCategory {
+        switch self {
+        case .bug: return .bug
+        case .refactor: return .refactor
+        case .performance: return .performance
+        case .security: return .security
+        case .testing: return .testing
+        case .design: return .design
+        case .documentation: return .documentation
+        case .question: return .question
+        case .other: return .other
+        }
+    }
+}
+
+/// A fully-realized action item with layered depth: title, why-it-matters,
+/// deep detail, evidence, plus priority and category for triage.
+@Generable
 struct PolishedActionItem {
-    @Guide(description: "The concise, actionable one-liner.")
+    @Guide(description: "A concise, actionable one-line title (imperative, e.g. 'Add retry logic to the upload path').")
     var oneLiner: String
 
-    @Guide(description: "In-depth detail: full context and the reasoning behind this item.")
+    @Guide(description: "ONE sentence on why this matters or the impact if it's ignored.")
+    var rationale: String
+
+    @Guide(description: "In-depth detail: full context, the reasoning, and a concrete suggested approach. Two to four sentences.")
     var inDepthDetail: String
 
     @Guide(description: "Who raised it.")
     var attribution: String
 
-    @Guide(description: "Short verbatim supporting quotes from the discussion.")
+    @Guide(description: "Short verbatim supporting quotes from the discussion. Empty if none.")
     var supportingQuotes: [String]
+
+    @Guide(description: "How urgent this is: blocker, major, minor, or nit.")
+    var priority: GenerablePriority
+
+    @Guide(description: "The kind of work: bug, refactor, performance, security, testing, design, documentation, question, or other.")
+    var category: GenerableCategory
 }

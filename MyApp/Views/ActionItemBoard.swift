@@ -58,7 +58,7 @@ struct ReviewBoard: View {
         .buttonStyle(.plain)
         .font(.system(size: 11, weight: .medium, design: .rounded))
         .padding(.horizontal, 12).padding(.vertical, 7)
-        .background(.white.opacity(0.06), in: Capsule())
+        .glassEffect(.regular, in: .capsule)
         .transition(.opacity)
     }
 
@@ -189,7 +189,7 @@ private struct QuestionRow: View {
             } label: {
                 Image(systemName: question.isResolved ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 13))
-                    .foregroundStyle(question.isResolved ? Color(red: 0.35, green: 0.85, blue: 0.55) : .tertiary)
+                    .foregroundStyle(question.isResolved ? AnyShapeStyle(Color(red: 0.35, green: 0.85, blue: 0.55)) : AnyShapeStyle(.tertiary))
             }
             .buttonStyle(.plain)
 
@@ -208,8 +208,7 @@ private struct QuestionRow: View {
             Spacer(minLength: 0)
         }
         .padding(10)
-        .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 11, style: .continuous).strokeBorder(.white.opacity(0.05), lineWidth: 1))
+        .glassEffect(.regular, in: .rect(cornerRadius: 11))
         .opacity(question.isResolved ? 0.75 : 1)
     }
 }
