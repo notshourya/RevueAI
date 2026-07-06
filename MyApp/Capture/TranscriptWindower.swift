@@ -18,13 +18,19 @@ enum TranscriptWindower {
         segments.reduce(0) { $0 + characters($1) } / charactersPerToken
     }
 
-    /// A single segment larger than the budget still gets a window of its own
-    /// (never dropped) — the backend may truncate, but content is not lost here.
+    /// Every input segment lands in at least one window, in order. A segment
+    /// larger than the whole budget is still emitted (its windows simply
+    /// exceed the budget, and it can repeat across a few consecutive
+    /// overlaps — wasteful but never lossy).
     ///
     /// The accumulator tracks characters (not per-segment floored tokens) so
     /// the budget check is exactly `estimatedTokens(window) <= tokenBudget` —
     /// summing floored per-segment costs would under-count and let windows
-    /// exceed the budget by rounding drift.
+    /// exceed the budget by rounding drift. `carriedCount` tracks how much of
+    /// `current` is overlap carried from the previous window, so the final
+    /// flush emits exactly when there is new content — a `count >
+    /// overlapSegments` proxy would drop a trailing segment after an
+    /// undersized (single-segment) window.
     static func windows(for segments: [AudioSegment], tokenBudget: Int) -> [[AudioSegment]] {
         guard !segments.isEmpty else { return [] }
         guard estimatedTokens(segments) > tokenBudget else { return [segments] }
@@ -32,18 +38,20 @@ enum TranscriptWindower {
         var result: [[AudioSegment]] = []
         var current: [AudioSegment] = []
         var currentCharacters = 0
+        var carriedCount = 0
         for segment in segments {
             let cost = characters(segment)
             if !current.isEmpty, (currentCharacters + cost) / charactersPerToken > tokenBudget {
                 result.append(current)
                 let overlap = Array(current.suffix(overlapSegments))
                 current = overlap
+                carriedCount = overlap.count
                 currentCharacters = overlap.reduce(0) { $0 + characters($1) }
             }
             current.append(segment)
             currentCharacters += cost
         }
-        if current.count > overlapSegments || result.isEmpty {
+        if current.count > carriedCount || result.isEmpty {
             result.append(current)
         }
         return result

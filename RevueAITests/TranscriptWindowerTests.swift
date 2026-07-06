@@ -52,9 +52,16 @@ struct TranscriptWindowerTests {
         #expect(reconstructed == longTranscript)
     }
 
-    @Test func oversizedSingleSegmentGetsItsOwnWindow() {
+    @Test func oversizedSegmentIsNeverDropped() {
         let huge = seg(String(repeating: "x", count: 2000))
         let windows = TranscriptWindower.windows(for: [seg("small"), huge, seg("small too")], tokenBudget: 50)
         #expect(windows.flatMap { $0 }.contains(huge))
+    }
+
+    @Test func trailingSegmentAfterOversizedWindowIsNotDropped() {
+        let huge = seg(String(repeating: "x", count: 2000))
+        let tail = seg("tail")
+        let windows = TranscriptWindower.windows(for: [huge, tail], tokenBudget: 50)
+        #expect(windows.flatMap { $0 }.contains(tail))
     }
 }
