@@ -19,6 +19,18 @@ enum MarkdownExporter {
             lines.append("")
         }
 
+        let decisions = note.sortedDecisions
+        if !decisions.isEmpty {
+            lines.append("## Decisions")
+            lines.append("")
+            for decision in decisions {
+                var line = "- \(decision.statement)"
+                if !decision.attribution.isEmpty { line += " _(\(decision.attribution))_" }
+                lines.append(line)
+            }
+            lines.append("")
+        }
+
         let items = note.sortedActionItems
         if !items.isEmpty {
             lines.append("## Action Items")

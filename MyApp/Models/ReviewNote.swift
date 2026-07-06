@@ -35,6 +35,9 @@ final class ReviewNote {
     @Relationship(deleteRule: .cascade, inverse: \OpenQuestion.note)
     var openQuestions: [OpenQuestion]? = []
 
+    @Relationship(deleteRule: .cascade, inverse: \Decision.note)
+    var decisions: [Decision]? = []
+
     @Relationship(deleteRule: .cascade, inverse: \Speaker.note)
     var speakers: [Speaker]? = []
 
@@ -68,5 +71,10 @@ final class ReviewNote {
     /// Open questions sorted by their capture order.
     var sortedOpenQuestions: [OpenQuestion] {
         (openQuestions ?? []).sorted { $0.order < $1.order }
+    }
+
+    /// Decisions sorted by their capture order.
+    var sortedDecisions: [Decision] {
+        (decisions ?? []).sorted { $0.order < $1.order }
     }
 }

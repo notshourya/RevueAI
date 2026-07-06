@@ -8,6 +8,7 @@ func makeInMemoryContext() throws -> ModelContext {
         ReviewNote.self,
         ActionItem.self,
         OpenQuestion.self,
+        Decision.self,
         Speaker.self,
     ])
     let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
@@ -26,13 +27,15 @@ extension PolishedReview {
         summary: String = "A solid review.",
         verdict: GenerableVerdict = .needsChanges,
         actionItems: [PolishedActionItem] = [],
-        openQuestions: [OpenQuestionCandidate] = []
+        openQuestions: [OpenQuestionCandidate] = [],
+        decisions: [DecisionCandidate] = []
     ) -> PolishedReview {
         PolishedReview(
             summary: summary,
             verdict: verdict,
             actionItems: actionItems,
-            openQuestions: openQuestions
+            openQuestions: openQuestions,
+            decisions: decisions
         )
     }
 }

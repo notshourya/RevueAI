@@ -52,6 +52,18 @@ final class LiveExtractor {
             questionOrder += 1
         }
 
+        var decisionOrder = note.decisions?.count ?? 0
+        for candidate in points.decisions {
+            let decision = Decision(
+                statement: candidate.statement,
+                attribution: candidate.attribution,
+                order: decisionOrder
+            )
+            decision.note = note
+            context.insert(decision)
+            decisionOrder += 1
+        }
+
         try? context.save()
         return points
     }
@@ -66,7 +78,10 @@ final class LiveExtractor {
         let questions = (note.openQuestions ?? [])
             .sorted { $0.order < $1.order }
             .map { "? \($0.text)" }
-        var entries = items + questions
+        let decisions = (note.decisions ?? [])
+            .sorted { $0.order < $1.order }
+            .map { "• \($0.statement)" }
+        var entries = items + decisions + questions
         if let limit, entries.count > limit {
             let omitted = entries.count - limit
             entries = ["(+\(omitted) earlier points)"] + entries.suffix(limit)

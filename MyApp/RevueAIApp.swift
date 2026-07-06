@@ -15,6 +15,7 @@ struct RevueAIApp: App {
                 ReviewNote.self,
                 ActionItem.self,
                 OpenQuestion.self,
+                Decision.self,
                 Speaker.self,
             ])
             // Local store for Milestone 1. The schema is CloudKit-ready, so

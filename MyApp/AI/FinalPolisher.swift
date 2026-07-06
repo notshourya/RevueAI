@@ -100,6 +100,7 @@ final class FinalPolisher {
 
         for existing in note.actionItems ?? [] { context.delete(existing) }
         for existing in note.openQuestions ?? [] { context.delete(existing) }
+        for existing in note.decisions ?? [] { context.delete(existing) }
 
         // Code-level dedup safety net: skip near-identical one-liners the model
         // may still emit despite the merge instructions.
@@ -138,6 +139,22 @@ final class FinalPolisher {
             openQuestion.note = note
             context.insert(openQuestion)
             questionOrder += 1
+        }
+
+        var seenDecisions: [String] = []
+        var decisionOrder = 0
+        for decision in result.decisions {
+            let key = Self.normalize(decision.statement)
+            guard !key.isEmpty, !seenDecisions.contains(where: { Self.similar($0, key) }) else { continue }
+            seenDecisions.append(key)
+            let record = Decision(
+                statement: decision.statement,
+                attribution: decision.attribution,
+                order: decisionOrder
+            )
+            record.note = note
+            context.insert(record)
+            decisionOrder += 1
         }
     }
 

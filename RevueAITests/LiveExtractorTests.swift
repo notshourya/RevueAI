@@ -80,4 +80,20 @@ struct LiveExtractorTests {
         #expect(known.contains("(+5 earlier points)"))
         #expect(!known.contains("- Item 0\n"))
     }
+
+    @Test func persistsDecisions() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let model = FakeReviewModel()
+        model.extractResults = [.success(ExtractedPoints(
+            actionItems: [],
+            decisions: [DecisionCandidate(statement: "Use SwiftData over Core Data", attribution: "presenter")],
+            openQuestions: []
+        ))]
+        let extractor = LiveExtractor(model: model)
+        try await extractor.extractAndCheckpoint(chunk: "[presenter] let's use SwiftData", into: note, context: context)
+        #expect(note.sortedDecisions.map(\.statement) == ["Use SwiftData over Core Data"])
+        #expect(note.sortedDecisions.first?.attribution == "presenter")
+    }
 }

@@ -63,6 +63,9 @@ struct PolishedReview {
 
     @Guide(description: "The unresolved open questions.")
     var openQuestions: [OpenQuestionCandidate]
+
+    @Guide(description: "The key decisions that were made, consolidated and de-duplicated.")
+    var decisions: [DecisionCandidate]
 }
 
 /// Constrained verdict the model must choose from; mapped to `ReviewVerdict`.

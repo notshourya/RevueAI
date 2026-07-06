@@ -14,6 +14,7 @@ struct NoteDetailView: View {
                 header
                 if note.status == .processing { processingRow }
                 summaryStrip
+                decisionsStrip
                 ReviewBoard(note: note)
                 Color.clear.frame(height: 24)
             }
@@ -107,6 +108,29 @@ struct NoteDetailView: View {
                     .lineSpacing(3)
                     .foregroundStyle(.primary.opacity(0.9))
                     .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        }
+    }
+
+    @ViewBuilder
+    private var decisionsStrip: some View {
+        let decisions = note.sortedDecisions
+        if !decisions.isEmpty {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Decisions", systemImage: "checkmark.seal")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                ForEach(decisions) { decision in
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("•")
+                        Text(decision.statement)
+                    }
+                    .font(.system(size: 13, design: .rounded))
+                    .foregroundStyle(.primary.opacity(0.9))
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)

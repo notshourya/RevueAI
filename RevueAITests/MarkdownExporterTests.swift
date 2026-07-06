@@ -20,6 +20,9 @@ struct MarkdownExporterTests {
         let question = OpenQuestion(text: "Do we need pagination?", attribution: "Reviewer 1", order: 0)
         question.note = note
         context.insert(question)
+        let decision = Decision(statement: "Ship behind a feature flag", attribution: "Reviewer 1", order: 0)
+        decision.note = note
+        context.insert(decision)
 
         let markdown = MarkdownExporter.markdown(for: note)
         #expect(markdown.contains("# API Review"))
@@ -29,5 +32,7 @@ struct MarkdownExporterTests {
         #expect(markdown.contains("> this will fail on bad wifi"))
         #expect(markdown.contains("## Open Questions"))
         #expect(markdown.contains("Do we need pagination?"))
+        #expect(markdown.contains("## Decisions"))
+        #expect(markdown.contains("- Ship behind a feature flag"))
     }
 }

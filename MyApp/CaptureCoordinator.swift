@@ -140,6 +140,7 @@ final class CaptureCoordinator {
             lastSummary = note.summary
             lastVerdict = note.verdict
             livePoints = note.sortedActionItems.map(\.oneLiner)
+                + note.sortedDecisions.map { "✓ \($0.statement)" }
                 + note.sortedOpenQuestions.map { "? \($0.text)" }
         }
 
@@ -250,6 +251,7 @@ final class CaptureCoordinator {
             try await liveExtractor.extractAndCheckpoint(chunk: chunk, into: note, context: context)
             transcript.commitExtracted(count: fresh.count)
             livePoints = note.sortedActionItems.map(\.oneLiner)
+                + note.sortedDecisions.map { "✓ \($0.statement)" }
                 + note.sortedOpenQuestions.map { "? \($0.text)" }
         } catch {
             errorMessage = error.localizedDescription

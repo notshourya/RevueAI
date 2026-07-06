@@ -143,4 +143,20 @@ struct FinalPolisherTests {
         #expect(note.status == .processedOnDevice)
         #expect(note.sortedActionItems.map(\.oneLiner) == ["Checkpointed point"])
     }
+
+    @Test func appliesConsolidatedDecisions() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let stale = Decision(statement: "Old live decision", order: 0)
+        stale.note = note
+        context.insert(stale)
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub(decisions: [
+            DecisionCandidate(statement: "Ship behind a feature flag", attribution: "Reviewer 1"),
+        ]))]
+        let polisher = FinalPolisher(model: model)
+        await polisher.polish(note: note, segments: [seg("hello")], context: context)
+        #expect(note.sortedDecisions.map(\.statement) == ["Ship behind a feature flag"])
+    }
 }
