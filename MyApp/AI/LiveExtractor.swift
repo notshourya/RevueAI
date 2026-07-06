@@ -6,6 +6,9 @@ import SwiftData
 /// a crash mid-meeting (the in-memory transcript itself is expendable by design).
 @MainActor
 final class LiveExtractor {
+    /// Most recent points sent to the live pass — bounds context on long meetings.
+    static let liveKnownPointsLimit = 25
+
     private let model: any ReviewLanguageModel
 
     init(model: any ReviewLanguageModel) {
@@ -20,7 +23,7 @@ final class LiveExtractor {
         into note: ReviewNote,
         context: ModelContext
     ) async throws -> ExtractedPoints {
-        let known = Self.knownPointsSummary(for: note)
+        let known = Self.knownPointsSummary(for: note, limit: Self.liveKnownPointsLimit)
         let points = try await model.extractPoints(fromChunk: chunk, knownPoints: known)
 
         var order = note.actionItems?.count ?? 0
@@ -53,11 +56,21 @@ final class LiveExtractor {
         return points
     }
 
-    /// A compact list of the points already extracted, sent to the model so it
-    /// only returns genuinely new items.
-    static func knownPointsSummary(for note: ReviewNote) -> String {
-        let items = note.sortedActionItems.map { "- \($0.oneLiner)" }
-        let questions = note.sortedOpenQuestions.map { "? \($0.text)" }
-        return (items + questions).joined(separator: "\n")
+    /// A compact list of the points already extracted, in capture order. Pass
+    /// `limit` to keep only the most recent entries (live pass); the final
+    /// pass omits it and sees everything.
+    static func knownPointsSummary(for note: ReviewNote, limit: Int? = nil) -> String {
+        let items = (note.actionItems ?? [])
+            .sorted { $0.order < $1.order }
+            .map { "- \($0.oneLiner)" }
+        let questions = (note.openQuestions ?? [])
+            .sorted { $0.order < $1.order }
+            .map { "? \($0.text)" }
+        var entries = items + questions
+        if let limit, entries.count > limit {
+            let omitted = entries.count - limit
+            entries = ["(+\(omitted) earlier points)"] + entries.suffix(limit)
+        }
+        return entries.joined(separator: "\n")
     }
 }
