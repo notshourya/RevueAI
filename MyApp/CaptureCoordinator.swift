@@ -66,6 +66,10 @@ final class CaptureCoordinator {
     private let extractionSegmentThreshold = 6
     private let cadenceTick: Duration = .seconds(2)
 
+    /// Whether the most recent live-extraction attempt threw — suppresses the
+    /// cadence's threshold shortcut so failures retry at interval pacing.
+    private var lastExtractionFailed = false
+
     init(
         transcription: (any TranscriptionProviding)? = nil,
         systemTranscription: (any TranscriptionProviding)? = nil,
@@ -86,6 +90,7 @@ final class CaptureCoordinator {
     func start(context: ModelContext) async {
         guard state == .idle else { return }
         errorMessage = nil
+        lastExtractionFailed = false
         livePoints = []
         capturedPhraseCount = 0
         elapsedSeconds = 0
@@ -205,13 +210,18 @@ final class CaptureCoordinator {
 
     /// Hybrid trigger: a burst of new segments extracts immediately; otherwise
     /// the interval flushes whatever trickled in. Silence costs nothing.
+    /// After a failed attempt the threshold shortcut is suppressed (failure
+    /// leaves pending high, and without this the cadence would retry every
+    /// tick); retries fall back to interval pacing.
     nonisolated static func shouldExtract(
         pending: Int,
         elapsedSinceLastRun: Duration,
         threshold: Int,
-        interval: Duration
+        interval: Duration,
+        lastAttemptFailed: Bool = false
     ) -> Bool {
         guard pending > 0 else { return false }
+        if lastAttemptFailed { return elapsedSinceLastRun >= interval }
         return pending >= threshold || elapsedSinceLastRun >= interval
     }
 
@@ -225,7 +235,8 @@ final class CaptureCoordinator {
                     pending: self.transcript.pendingCount,
                     elapsedSinceLastRun: ContinuousClock.now - lastRun,
                     threshold: self.extractionSegmentThreshold,
-                    interval: self.extractionInterval
+                    interval: self.extractionInterval,
+                    lastAttemptFailed: self.lastExtractionFailed
                 ) {
                     await self.runLiveExtraction()
                     lastRun = ContinuousClock.now
@@ -276,10 +287,12 @@ final class CaptureCoordinator {
         do {
             try await liveExtractor.extractAndCheckpoint(chunk: chunk, into: note, context: context)
             transcript.commitExtracted(count: fresh.count)
+            lastExtractionFailed = false
             livePoints = note.sortedActionItems.map(\.oneLiner)
                 + note.sortedDecisions.map { "✓ \($0.statement)" }
                 + note.sortedOpenQuestions.map { "? \($0.text)" }
         } catch {
+            lastExtractionFailed = true
             errorMessage = error.localizedDescription
         }
     }

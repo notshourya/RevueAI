@@ -121,5 +121,14 @@ struct CaptureCoordinatorTests {
         // Nothing pending → never extract, no matter how long it's been.
         #expect(!CaptureCoordinator.shouldExtract(
             pending: 0, elapsedSinceLastRun: .seconds(120), threshold: 6, interval: .seconds(20)))
+        // After a failed attempt the threshold shortcut is suppressed — a
+        // stuck-high pending count must not hot-loop retries every tick.
+        #expect(!CaptureCoordinator.shouldExtract(
+            pending: 10, elapsedSinceLastRun: .seconds(2), threshold: 6, interval: .seconds(20),
+            lastAttemptFailed: true))
+        // Once the full interval elapses, a retry is allowed even after failure.
+        #expect(CaptureCoordinator.shouldExtract(
+            pending: 10, elapsedSinceLastRun: .seconds(20), threshold: 6, interval: .seconds(20),
+            lastAttemptFailed: true))
     }
 }
