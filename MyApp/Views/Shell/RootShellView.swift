@@ -217,6 +217,14 @@ struct RootShellView: View {
 
         static func centerSearchItem(in window: NSWindow?) {
             guard let toolbar = window?.toolbar else { return }
+            // Drop the sidebar tracking separators: they split the toolbar
+            // into sections and "centered" becomes section-centered. One
+            // section means the field centers on the window, sidebar
+            // visible or not.
+            for (index, item) in toolbar.items.enumerated().reversed()
+            where item is NSTrackingSeparatorToolbarItem {
+                toolbar.removeItem(at: index)
+            }
             let searchItem = toolbar.items.first {
                 $0 is NSSearchToolbarItem || $0.view?.firstSubview(of: NSSearchField.self) != nil
             }
