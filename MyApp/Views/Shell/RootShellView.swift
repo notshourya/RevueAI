@@ -1,49 +1,43 @@
 import SwiftUI
 import SwiftData
 
-/// The main window: three parallel glass panels (Library | Reader | Live) on
-/// the dark backdrop, resizable and collapsible. The live panel auto-expands
+/// The main window: a native sidebar of reviews, the reading pane as detail,
+/// and the live-capture panel as a toggleable inspector that opens itself
 /// when capture starts.
 struct RootShellView: View {
     @Environment(CaptureCoordinator.self) private var coordinator
-    @State private var layout = PanelLayoutModel()
+    @Environment(\.modelContext) private var context
     @State private var selection: ReviewNote?
+    @State private var showLive = false
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
-    @Environment(\.modelContext) private var context
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showOnboarding = false
 
     var body: some View {
-        ZStack {
-            PremiumBackground()
-            PanelSplitView(model: layout) { panel in
-                switch panel {
-                case .library:
-                    PanelChrome(title: "Library", systemImage: "books.vertical",
-                                onCollapse: { layout.toggleCollapse(.library) },
-                                accessory: {}) {
-                        LibraryPane(selection: $selection)
-                    }
-                case .reader:
-                    PanelChrome(title: "Review", systemImage: "doc.text",
-                                onCollapse: { layout.toggleCollapse(.reader) },
-                                accessory: {}) {
-                        readerContent
-                    }
-                case .live:
-                    PanelChrome(title: "Live", systemImage: "waveform",
-                                onCollapse: { layout.toggleCollapse(.live) },
-                                accessory: {}) {
-                        LivePanelView()
-                    }
+        NavigationSplitView {
+            LibraryPane(selection: $selection)
+                .navigationSplitViewColumnWidth(min: 260, ideal: 320)
+        } detail: {
+            readerContent
+        }
+        .inspector(isPresented: $showLive) {
+            LivePanelView()
+                .inspectorColumnWidth(min: 260, ideal: 300)
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showLive.toggle()
+                } label: {
+                    Label("Live", systemImage: "waveform")
                 }
+                .help(showLive ? "Hide the live capture panel" : "Show the live capture panel")
             }
-            .padding(12)
         }
         .onChange(of: coordinator.state) { _, newValue in
             if newValue == .listening {
-                withAnimation(.smooth) { layout.expandLive() }
+                withAnimation(.smooth) { showLive = true }
             }
             floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
         }
@@ -68,15 +62,17 @@ struct RootShellView: View {
         if let selection {
             NoteDetailView(note: selection)
         } else {
-            VStack(spacing: 14) {
-                Image(systemName: "doc.text.magnifyingglass")
-                    .font(.system(size: 44, weight: .light))
-                    .foregroundStyle(.tertiary)
-                Text("Select a review")
-                    .font(Theme.display(20))
-                    .foregroundStyle(.secondary)
+            ZStack {
+                PremiumBackground()
+                VStack(spacing: 14) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: 44, weight: .light))
+                        .foregroundStyle(.tertiary)
+                    Text("Select a review")
+                        .font(Theme.display(20))
+                        .foregroundStyle(.secondary)
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }
