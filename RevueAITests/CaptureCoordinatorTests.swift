@@ -24,7 +24,11 @@ struct CaptureCoordinatorTests {
 
         await coordinator.start(context: context)
         #expect(coordinator.state == .listening)
-        try await Task.sleep(for: .milliseconds(150))
+        // Poll rather than racing a fixed sleep — app-host startup work
+        // (e.g. App Intents donation) can delay the mock stream.
+        for _ in 0..<100 where coordinator.capturedPhraseCount < 2 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         #expect(coordinator.capturedPhraseCount == 2)
 
         await coordinator.stop()
