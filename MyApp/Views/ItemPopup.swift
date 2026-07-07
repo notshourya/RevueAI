@@ -90,8 +90,9 @@ struct ActionItemDetail: View {
                         Label("Delete", systemImage: "trash")
                             .font(Theme.rounded(11, .medium))
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.red.opacity(0.85))
+                    .buttonStyle(.bordered)
+                    .tint(.red)
+                    .foregroundStyle(.red)
                 }
             }
             .padding(16)
