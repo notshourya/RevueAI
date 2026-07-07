@@ -10,7 +10,6 @@ struct RootShellView: View {
     @Environment(CaptureCoordinator.self) private var coordinator
     @Environment(\.modelContext) private var context
     @State private var selection: ReviewNote?
-    @State private var showLive = false
     @State private var showArchived = false
     @AppStorage("showMiniCalendar") private var showMiniCalendar = true
     @State private var calendarModel = CalendarPaneModel(calendar: CalendarService())
@@ -37,10 +36,6 @@ struct RootShellView: View {
         } detail: {
             readerContent
         }
-        .inspector(isPresented: $showLive) {
-            LivePanelView()
-                .inspectorColumnWidth(min: 260, ideal: 300)
-        }
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
                 Toggle(isOn: $showMiniCalendar.animation(.smooth)) {
@@ -57,19 +52,8 @@ struct RootShellView: View {
                 .toggleStyle(.button)
                 .help(showArchived ? "Show active reviews" : "Show archived reviews")
             }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    showLive.toggle()
-                } label: {
-                    Label("Live", systemImage: "waveform")
-                }
-                .help(showLive ? "Hide the live capture panel" : "Show the live capture panel")
-            }
         }
         .onChange(of: coordinator.state) { _, newValue in
-            if newValue == .listening {
-                withAnimation(.smooth) { showLive = true }
-            }
             floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
         }
         .onChange(of: floatingOrbEnabled) { _, enabled in

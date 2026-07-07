@@ -90,7 +90,7 @@ struct LibraryPane: View {
             Text(showArchived ? "No archived reviews" : "No reviews yet")
                 .font(.headline)
             if !showArchived {
-                Text("Start a capture from the Live panel or the menu bar.")
+                Text("Start a capture from the menu bar.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

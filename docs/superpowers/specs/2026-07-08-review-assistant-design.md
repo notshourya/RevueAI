@@ -70,10 +70,10 @@ nothing; it never fabricates notes, items, or dates.
 
 ### Inspector panel
 
-The right-hand inspector becomes a two-mode slot (`enum InspectorPane { case
-live, assistant }`): the existing waveform toolbar button shows Live, a new
-sparkles toolbar button shows Assistant; opening one closes the other, and a
-capture starting still auto-opens Live. The assistant panel: query field
+The right-hand inspector belongs to the assistant alone (the former Live
+panel and its waveform toolbar toggle are removed — capture status lives in
+the menu bar and the floating blob). A sparkles toolbar button toggles the
+assistant inspector. The assistant panel: query field
 pinned at top (submit on return, disabled while `isThinking`), exchanges
 scrolling below (question in secondary text, answer in body text,
 progress indicator while thinking), and a source-chip row under each answer —
