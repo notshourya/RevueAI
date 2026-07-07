@@ -1,25 +1,41 @@
-#!/usr/bin/swift
-// Renders the onboarding tour artwork: the liquid-metal brand orb on graphite,
-// one image per slide with its own heat hue and SF-symbol badge. 16:10 to
-// match TourKit's image region. Usage:
-//   swift Tools/render-tour-art.swift MyApp/Resources/TourArt
+// Renders the onboarding tour artwork: the liquid glass blob on neutral
+// near-black, one image per slide with a different phase and an SF-symbol
+// badge. 16:10 to match TourKit's image region. Compile with swiftc:
+//   xcrun swiftc Tools/render-tour-art.swift -o /tmp/render-tour-art
+//   /tmp/render-tour-art MyApp/Resources/TourArt
 import AppKit
 
 struct Slide {
     let name: String
-    let accent: NSColor
+    let phase: CGFloat
     let symbol: String
 }
 
 let slides: [Slide] = [
-    Slide(name: "tour_0", accent: NSColor(red: 0.18, green: 0.86, blue: 0.80, alpha: 1), symbol: "waveform"),
-    Slide(name: "tour_1", accent: NSColor(red: 0.35, green: 0.85, blue: 0.55, alpha: 1), symbol: "lock.shield.fill"),
-    Slide(name: "tour_2", accent: NSColor(red: 0.40, green: 0.55, blue: 0.62, alpha: 1), symbol: "mic.fill"),
-    Slide(name: "tour_3", accent: NSColor(red: 1.00, green: 0.64, blue: 0.28, alpha: 1), symbol: "person.2.wave.2.fill"),
-    Slide(name: "tour_4", accent: NSColor(red: 1.00, green: 0.34, blue: 0.28, alpha: 1), symbol: "record.circle"),
+    Slide(name: "tour_0", phase: 2.1, symbol: "waveform"),
+    Slide(name: "tour_1", phase: 3.4, symbol: "lock.shield.fill"),
+    Slide(name: "tour_2", phase: 4.8, symbol: "mic.fill"),
+    Slide(name: "tour_3", phase: 0.9, symbol: "person.2.wave.2.fill"),
+    Slide(name: "tour_4", phase: 5.7, symbol: "record.circle"),
 ]
 
 let width = 1280, height = 800
+
+func blobPath(center: CGPoint, baseRadius: CGFloat, phase: CGFloat) -> CGPath {
+    let path = CGMutablePath()
+    let steps = 240
+    for i in 0...steps {
+        let theta = CGFloat(i) / CGFloat(steps) * 2 * .pi
+        let radius = baseRadius * (1.0
+            + 0.055 * sin(3 * theta + phase)
+            + 0.038 * sin(5 * theta - phase * 0.7 + 1.7)
+            + 0.024 * sin(8 * theta + phase * 1.4 + 4.2))
+        let point = CGPoint(x: center.x + cos(theta) * radius, y: center.y + sin(theta) * radius)
+        if i == 0 { path.move(to: point) } else { path.addLine(to: point) }
+    }
+    path.closeSubpath()
+    return path
+}
 
 func render(_ slide: Slide) -> NSBitmapImageRep {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
@@ -31,90 +47,61 @@ func render(_ slide: Slide) -> NSBitmapImageRep {
     let context = NSGraphicsContext.current!.cgContext
     let size = CGSize(width: CGFloat(width), height: CGFloat(height))
 
-    // Graphite backdrop.
-    context.setFillColor(CGColor(red: 0.02, green: 0.024, blue: 0.025, alpha: 1))
+    // Neutral near-black backdrop.
+    context.setFillColor(CGColor(red: 0.055, green: 0.055, blue: 0.062, alpha: 1))
     context.fill(CGRect(origin: .zero, size: size))
 
-    let field = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                           colors: [CGColor(red: 0.02, green: 0.024, blue: 0.025, alpha: 1),
-                                    CGColor(red: 0.07, green: 0.08, blue: 0.08, alpha: 1)] as CFArray,
-                           locations: [0, 1])!
-    context.drawLinearGradient(field,
-                               start: CGPoint(x: 0, y: 0),
-                               end: CGPoint(x: size.width, y: size.height),
-                               options: [])
-
-    // Soft heat bloom behind the orb.
     let center = CGPoint(x: size.width / 2, y: size.height / 2)
-    let accent = slide.accent.usingColorSpace(.deviceRGB)!
-    let warm = NSColor(red: 1.0, green: 0.64, blue: 0.28, alpha: 1)
-    let bloom = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                           colors: [accent.withAlphaComponent(0.32).cgColor,
-                                    accent.withAlphaComponent(0).cgColor] as CFArray,
-                           locations: [0, 1])!
-    context.drawRadialGradient(bloom, startCenter: center, startRadius: 1,
-                               endCenter: center, endRadius: size.height * 0.55, options: [])
+    let radius = size.height * 0.24
+    let blob = blobPath(center: center, baseRadius: radius, phase: slide.phase)
 
-    // Orb body.
-    let diameter = size.height * 0.46
-    let orbRect = CGRect(x: center.x - diameter / 2, y: center.y - diameter / 2,
-                         width: diameter, height: diameter)
-    let body = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                          colors: [CGColor(gray: 1, alpha: 0.92),
-                                   accent.withAlphaComponent(0.82).cgColor,
-                                   CGColor(red: 0.32, green: 0.42, blue: 0.43, alpha: 1),
-                                   CGColor(red: 0.025, green: 0.03, blue: 0.03, alpha: 1)] as CFArray,
-                          locations: [0, 0.26, 0.58, 1])!
+    // Translucent glass body.
     context.saveGState()
-    context.addEllipse(in: orbRect)
+    context.addPath(blob)
     context.clip()
+    let body = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                          colors: [CGColor(red: 0.72, green: 0.82, blue: 0.90, alpha: 0.34),
+                                   CGColor(red: 0.45, green: 0.55, blue: 0.66, alpha: 0.16),
+                                   CGColor(red: 0.20, green: 0.25, blue: 0.32, alpha: 0.10)] as CFArray,
+                          locations: [0, 0.55, 1])!
     context.drawRadialGradient(
         body,
-        startCenter: CGPoint(x: orbRect.midX - diameter * 0.14, y: orbRect.midY + diameter * 0.2),
-        startRadius: diameter * 0.018,
-        endCenter: CGPoint(x: orbRect.midX, y: orbRect.midY),
-        endRadius: diameter * 0.62,
-        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
+        startCenter: CGPoint(x: center.x - radius * 0.25, y: center.y + radius * 0.35),
+        startRadius: 1,
+        endCenter: center,
+        endRadius: radius * 1.25,
+        options: .drawsAfterEndLocation
     )
-    // Heated horizon band.
-    let band = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                          colors: [accent.withAlphaComponent(0).cgColor,
-                                   accent.withAlphaComponent(0.72).cgColor,
-                                   warm.withAlphaComponent(0.86).cgColor,
-                                   accent.withAlphaComponent(0).cgColor] as CFArray,
-                          locations: [0, 0.32, 0.62, 1])!
-    let bandRect = CGRect(x: orbRect.minX, y: orbRect.midY - diameter * 0.05,
-                          width: diameter, height: diameter * 0.14)
-    context.saveGState()
-    context.clip(to: bandRect)
-    context.drawLinearGradient(band,
-                               start: CGPoint(x: bandRect.minX, y: bandRect.midY),
-                               end: CGPoint(x: bandRect.maxX, y: bandRect.midY),
-                               options: [])
-    context.restoreGState()
-    // Top specular highlight.
-    let highlight = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                               colors: [CGColor(gray: 1, alpha: 0.45), CGColor(gray: 1, alpha: 0)] as CFArray,
-                               locations: [0, 1])!
-    let highlightCenter = CGPoint(x: orbRect.midX - diameter * 0.12, y: orbRect.maxY - diameter * 0.22)
-    context.drawRadialGradient(highlight, startCenter: highlightCenter, startRadius: diameter * 0.018,
-                               endCenter: highlightCenter, endRadius: diameter * 0.35,
-                               options: .drawsBeforeStartLocation)
+    let spec = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                          colors: [CGColor(gray: 1, alpha: 0.50), CGColor(gray: 1, alpha: 0)] as CFArray,
+                          locations: [0, 1])!
+    let specCenter = CGPoint(x: center.x - radius * 0.30, y: center.y + radius * 0.42)
+    context.drawRadialGradient(spec, startCenter: specCenter, startRadius: 1,
+                               endCenter: specCenter, endRadius: radius * 0.55, options: [])
+    let inner = blobPath(center: center, baseRadius: radius * 0.78, phase: slide.phase + 0.9)
+    context.addPath(inner)
+    context.setStrokeColor(CGColor(red: 0.80, green: 0.88, blue: 0.95, alpha: 0.20))
+    context.setLineWidth(3)
+    context.strokePath()
     context.restoreGState()
 
-    // Thin rim.
-    context.addEllipse(in: orbRect.insetBy(dx: 0.5, dy: 0.5))
-    context.setStrokeColor(CGColor(gray: 1, alpha: 0.3))
-    context.setLineWidth(2)
+    // Bright glass rim + soft glow.
+    context.addPath(blob)
+    context.setStrokeColor(CGColor(red: 0.92, green: 0.96, blue: 1.0, alpha: 0.85))
+    context.setLineWidth(4)
+    context.strokePath()
+    context.addPath(blob)
+    context.setStrokeColor(CGColor(red: 0.80, green: 0.90, blue: 1.0, alpha: 0.20))
+    context.setLineWidth(16)
     context.strokePath()
 
-    // SF-symbol badge at the orb's center.
-    let config = NSImage.SymbolConfiguration(pointSize: diameter * 0.24, weight: .semibold)
+    // SF-symbol badge at the blob's center.
+    let config = NSImage.SymbolConfiguration(pointSize: radius * 0.42, weight: .semibold)
     if let symbol = NSImage(systemSymbolName: slide.symbol, accessibilityDescription: nil)?
         .withSymbolConfiguration(config) {
         let tinted = NSImage(size: symbol.size, flipped: false) { rect in
             symbol.draw(in: rect)
-            NSColor.white.withAlphaComponent(0.85).set()
+            NSColor.white.withAlphaComponent(0.88).set()
             rect.fill(using: .sourceAtop)
             return true
         }
