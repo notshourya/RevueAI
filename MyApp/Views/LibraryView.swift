@@ -11,6 +11,9 @@ struct LibraryPane: View {
 
     @Binding var selection: ReviewNote?
     let showArchived: Bool
+    let showMiniCalendar: Bool
+    var calendarModel: CalendarPaneModel
+    var onArmChanged: () -> Void = {}
 
     private var shownNotes: [ReviewNote] { notes.filter { $0.isArchived == showArchived } }
 
@@ -36,7 +39,7 @@ struct LibraryPane: View {
         .overlay {
             if shownNotes.isEmpty { emptyState }
         }
-        .safeAreaInset(edge: .bottom) { recordBar }
+        .safeAreaInset(edge: .bottom) { bottomDock }
         .onChange(of: shownNotes.count) {
             if selection == nil || !shownNotes.contains(where: { $0 == selection }) {
                 selection = shownNotes.first
@@ -62,7 +65,21 @@ struct LibraryPane: View {
         }
     }
 
-    // MARK: - Record dock
+    // MARK: - Bottom dock (mini calendar + record orb)
+
+    private var bottomDock: some View {
+        VStack(spacing: 0) {
+            if showMiniCalendar {
+                Divider()
+                MiniCalendarView(model: calendarModel,
+                                 onOpenNote: { selection = $0 },
+                                 onArmChanged: onArmChanged)
+            }
+            Divider()
+            recordBar
+        }
+        .background(.ultraThinMaterial)
+    }
 
     private var recordBar: some View {
         VStack(spacing: 8) {
@@ -79,7 +96,6 @@ struct LibraryPane: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial)
     }
 
     // MARK: - Empty state
