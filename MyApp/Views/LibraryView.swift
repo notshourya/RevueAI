@@ -10,7 +10,7 @@ struct LibraryPane: View {
     @Query(sort: \ReviewNote.date, order: .reverse) private var notes: [ReviewNote]
 
     @Binding var selection: ReviewNote?
-    @State private var showArchived = false
+    let showArchived: Bool
 
     private var shownNotes: [ReviewNote] { notes.filter { $0.isArchived == showArchived } }
 
@@ -37,16 +37,6 @@ struct LibraryPane: View {
             if shownNotes.isEmpty { emptyState }
         }
         .safeAreaInset(edge: .bottom) { recordBar }
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    withAnimation(.smooth) { showArchived.toggle() }
-                } label: {
-                    Label("Archived", systemImage: showArchived ? "archivebox.fill" : "archivebox")
-                }
-                .help(showArchived ? "Show active reviews" : "Show archived reviews")
-            }
-        }
         .onChange(of: shownNotes.count) {
             if selection == nil || !shownNotes.contains(where: { $0 == selection }) {
                 selection = shownNotes.first
@@ -55,8 +45,11 @@ struct LibraryPane: View {
         .onChange(of: coordinator.state) { _, newValue in
             if newValue == .idle { selection = shownNotes.first }
         }
-        .onChange(of: showArchived) { selection = shownNotes.first }
-        .onAppear { selection = selection ?? shownNotes.first }
+        .onAppear {
+            if selection == nil || !shownNotes.contains(where: { $0 == selection }) {
+                selection = shownNotes.first
+            }
+        }
     }
 
     @ViewBuilder

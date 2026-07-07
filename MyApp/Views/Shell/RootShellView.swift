@@ -1,7 +1,28 @@
 import SwiftUI
 import SwiftData
 
-/// The main window: a native sidebar of reviews, the reading pane as detail,
+enum LibrarySection: String, CaseIterable, Identifiable {
+    case reviews, archived, calendar
+
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .reviews: "Reviews"
+        case .archived: "Archived"
+        case .calendar: "Calendar"
+        }
+    }
+    var systemImage: String {
+        switch self {
+        case .reviews: "doc.text"
+        case .archived: "archivebox"
+        case .calendar: "calendar"
+        }
+    }
+}
+
+/// The main window: a source-list sidebar (Reviews / Archived / Calendar),
+/// the section's content list in the middle, the reading pane as detail,
 /// and the live-capture panel as a toggleable inspector that opens itself
 /// when capture starts.
 struct RootShellView: View {
@@ -9,6 +30,8 @@ struct RootShellView: View {
     @Environment(\.modelContext) private var context
     @State private var selection: ReviewNote?
     @State private var showLive = false
+    @State private var section: LibrarySection = .reviews
+    @State private var calendarModel = CalendarPaneModel(calendar: CalendarService())
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
@@ -16,8 +39,29 @@ struct RootShellView: View {
 
     var body: some View {
         NavigationSplitView {
-            LibraryPane(selection: $selection)
-                .navigationSplitViewColumnWidth(min: 260, ideal: 320)
+            List(LibrarySection.allCases, selection: Binding(
+                get: { Optional(section) },
+                set: { if let value = $0 { section = value } }
+            )) { item in
+                Label(item.label, systemImage: item.systemImage).tag(item)
+            }
+            .listStyle(.sidebar)
+            .navigationSplitViewColumnWidth(min: 170, ideal: 190)
+        } content: {
+            switch section {
+            case .reviews:
+                LibraryPane(selection: $selection, showArchived: false)
+                    .navigationSplitViewColumnWidth(min: 260, ideal: 320)
+            case .archived:
+                LibraryPane(selection: $selection, showArchived: true)
+                    .navigationSplitViewColumnWidth(min: 260, ideal: 320)
+            case .calendar:
+                CalendarPane(model: calendarModel, onOpenNote: { note in
+                    section = .reviews
+                    selection = note
+                })
+                .navigationSplitViewColumnWidth(min: 320, ideal: 380)
+            }
         } detail: {
             readerContent
         }
