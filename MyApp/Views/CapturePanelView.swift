@@ -66,14 +66,10 @@ struct CapturePanelView: View {
                 Circle()
                     .fill(.white.opacity(0.04))
                     .frame(width: 168, height: 168)
-                StateOrb(mode: .listening, size: 148)
-                    .opacity(coordinator.state == .paused ? 0.35 : 1)
-                    .saturation(coordinator.state == .paused ? 0.3 : 1)
-                if coordinator.state == .paused {
-                    Image(systemName: "pause.fill")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
+                OrbView(state: OrbState.from(captureState: coordinator.state,
+                                             isExtracting: coordinator.isExtracting,
+                                             hasError: coordinator.errorMessage != nil),
+                        size: 148)
             }
             .animation(.smooth, value: coordinator.state)
 
@@ -175,7 +171,7 @@ struct CapturePanelView: View {
 
     private var processingView: some View {
         VStack(spacing: 16) {
-            StateOrb(mode: .processing, size: 110)
+            OrbView(state: .processing, size: 110)
             Text("Summarizing your review…")
                 .font(Theme.display(16, .medium))
                 .foregroundStyle(.secondary)

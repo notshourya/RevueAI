@@ -26,26 +26,16 @@ struct LivePanelView: View {
 
     @ViewBuilder
     private var orb: some View {
-        switch coordinator.state {
-        case .idle:
+        if coordinator.state == .idle {
             RecordOrb(isActive: false, size: 84) {
                 Task { await coordinator.start(context: context) }
             }
             .padding(.top, 20)
-        case .listening, .paused:
-            ZStack {
-                StateOrb(mode: .listening, size: 132)
-                    .opacity(coordinator.state == .paused ? 0.35 : 1)
-                    .saturation(coordinator.state == .paused ? 0.3 : 1)
-                if coordinator.state == .paused {
-                    Image(systemName: "pause.fill")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
-            }
-            .padding(.top, 12)
-        case .processing:
-            StateOrb(mode: .processing, size: 110)
+        } else {
+            OrbView(state: OrbState.from(captureState: coordinator.state,
+                                         isExtracting: coordinator.isExtracting,
+                                         hasError: coordinator.errorMessage != nil),
+                    size: 132)
                 .padding(.top, 12)
         }
     }

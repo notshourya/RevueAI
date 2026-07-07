@@ -28,6 +28,10 @@ final class CaptureCoordinator {
     var captureSystemAudio = true
     private(set) var systemAudioActive = false
 
+    /// True while a live-extraction call is in flight — drives the orb's
+    /// extracting shimmer. Purely observational; no pipeline behavior changes.
+    private(set) var isExtracting = false
+
     // Result of the most recent completed session, for the panel's summary card.
     private(set) var lastSummary: String?
     private(set) var lastVerdict: ReviewVerdict?
@@ -284,6 +288,8 @@ final class CaptureCoordinator {
         let chunk = fresh
             .map { "[\($0.speakerHint.rawValue)] \($0.text)" }
             .joined(separator: "\n")
+        isExtracting = true
+        defer { isExtracting = false }
         do {
             try await liveExtractor.extractAndCheckpoint(chunk: chunk, into: note, context: context)
             transcript.commitExtracted(count: fresh.count)
