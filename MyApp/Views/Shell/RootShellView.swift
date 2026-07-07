@@ -36,21 +36,16 @@ struct RootShellView: View {
         } detail: {
             readerContent
         }
-        .inspector(isPresented: $showAssistant) {
-            if let assistant {
-                AssistantPanelView(assistant: assistant) { noteID in
-                    openNote(id: noteID)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                if let assistant {
+                    AssistantSearchBar(isPresented: $showAssistant, assistant: assistant)
                 }
-                .inspectorColumnWidth(min: 280, ideal: 330)
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Toggle(isOn: $showAssistant.animation(.smooth)) {
-                    Label("Assistant", systemImage: "sparkles")
-                }
-                .toggleStyle(.button)
-                .help(showAssistant ? "Hide the assistant" : "Ask about your reviews")
+        .onReceive(NotificationCenter.default.publisher(for: .revueOpenNote)) { notification in
+            if let id = notification.userInfo?["id"] as? UUID {
+                openNote(id: id)
             }
         }
         .onChange(of: coordinator.state) { _, newValue in
