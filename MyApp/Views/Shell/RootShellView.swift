@@ -18,6 +18,8 @@ struct RootShellView: View {
     @State private var showOnboarding = false
     @State private var notifier = ArmedMeetingNotifier()
     @State private var duePrompt: PlannedCapture?
+    @State private var showAssistant = false
+    @State private var assistant: ReviewAssistant?
 
     var body: some View {
         NavigationSplitView {
@@ -34,6 +36,23 @@ struct RootShellView: View {
         } detail: {
             readerContent
         }
+        .inspector(isPresented: $showAssistant) {
+            if let assistant {
+                AssistantPanelView(assistant: assistant) { noteID in
+                    openNote(id: noteID)
+                }
+                .inspectorColumnWidth(min: 280, ideal: 330)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Toggle(isOn: $showAssistant.animation(.smooth)) {
+                    Label("Assistant", systemImage: "sparkles")
+                }
+                .toggleStyle(.button)
+                .help(showAssistant ? "Hide the assistant" : "Ask about your reviews")
+            }
+        }
         .onChange(of: coordinator.state) { _, newValue in
             floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
         }
@@ -47,6 +66,9 @@ struct RootShellView: View {
         }
         .onAppear {
             if !hasCompletedOnboarding { showOnboarding = true }
+            if assistant == nil {
+                assistant = ReviewAssistant(container: context.container)
+            }
         }
         .onChange(of: hasCompletedOnboarding) { _, completed in
             if !completed { showOnboarding = true }
@@ -113,6 +135,16 @@ struct RootShellView: View {
             )
             .padding(.bottom, 16)
             .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    private func openNote(id: UUID) {
+        var descriptor = FetchDescriptor<ReviewNote>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        guard let note = try? context.fetch(descriptor).first else { return }
+        withAnimation(.smooth) {
+            showCalendarSurface = false
+            selection = note
         }
     }
 
