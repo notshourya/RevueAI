@@ -39,6 +39,15 @@ struct RootShellView: View {
         } detail: {
             readerContent
         }
+        .toolbar {
+            ToolbarSpacer(.flexible)
+            ToolbarItem(placement: .automatic) {
+                AssistantSearchPill {
+                    withAnimation(.smooth) { showAssistant = true }
+                }
+            }
+            ToolbarSpacer(.flexible)
+        }
         .overlay(alignment: .top) {
             if showAssistant {
                 AssistantResultsCard(assistant: assistant,
@@ -164,14 +173,6 @@ struct RootShellView: View {
     @ViewBuilder
     private var readerContent: some View {
         readerBody
-            .safeAreaInset(edge: .top) {
-                if !showAssistant {
-                    AssistantSearchPill {
-                        withAnimation(.smooth) { showAssistant = true }
-                    }
-                    .padding(.vertical, 6)
-                }
-            }
     }
 
     @ViewBuilder
