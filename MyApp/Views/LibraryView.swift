@@ -65,37 +65,19 @@ struct LibraryPane: View {
         }
     }
 
-    // MARK: - Bottom dock (mini calendar + record orb)
+    // MARK: - Bottom dock (mini calendar)
 
+    @ViewBuilder
     private var bottomDock: some View {
-        VStack(spacing: 0) {
-            if showMiniCalendar {
+        if showMiniCalendar {
+            VStack(spacing: 0) {
                 Divider()
                 MiniCalendarView(model: calendarModel,
                                  onOpenNote: { selection = $0 },
                                  onArmChanged: onArmChanged)
             }
-            Divider()
-            recordBar
+            .background(.ultraThinMaterial)
         }
-        .background(.ultraThinMaterial)
-    }
-
-    private var recordBar: some View {
-        VStack(spacing: 8) {
-            if coordinator.isActive {
-                Text(coordinator.state == .paused
-                     ? "Paused · \(coordinator.elapsedText)"
-                     : "\(coordinator.elapsedText) · \(coordinator.capturedPhraseCount) phrases")
-                    .font(Theme.rounded(12, .medium).monospacedDigit())
-                    .foregroundStyle(.secondary)
-            }
-            RecordOrb(isActive: coordinator.isActive, size: 54, disabled: coordinator.state == .processing) {
-                toggleCapture()
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
     }
 
     // MARK: - Empty state
@@ -108,7 +90,7 @@ struct LibraryPane: View {
             Text(showArchived ? "No archived reviews" : "No reviews yet")
                 .font(.headline)
             if !showArchived {
-                Text("Press Record below to capture your first review.")
+                Text("Start a capture from the Live panel or the menu bar.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -118,13 +100,6 @@ struct LibraryPane: View {
     }
 
     // MARK: - Actions
-
-    private func toggleCapture() {
-        Task {
-            if coordinator.isActive { await coordinator.stop() }
-            else { await coordinator.start(context: context) }
-        }
-    }
 
     private func archive(_ note: ReviewNote) {
         withAnimation(.smooth) { note.isArchived.toggle() }
