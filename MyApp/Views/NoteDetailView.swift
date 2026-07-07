@@ -6,7 +6,6 @@ import AppKit
 /// parallel board (To Do · Completed · Questions).
 struct NoteDetailView: View {
     @Bindable var note: ReviewNote
-    @State private var showExport = false
 
     var body: some View {
         ScrollView {
@@ -26,7 +25,6 @@ struct NoteDetailView: View {
         .scrollEdgeEffectStyle(.soft, for: .all)
         .background { PremiumBackground() }
         .toolbar { exportToolbar }
-        .sheet(isPresented: $showExport) { ExportSheet(note: note) }
     }
 
     // MARK: - Toolbar
@@ -35,8 +33,21 @@ struct NoteDetailView: View {
     private var exportToolbar: some ToolbarContent {
         ToolbarSpacer(.flexible)
         ToolbarItem(placement: .primaryAction) {
-            Button {
-                showExport = true
+            Menu {
+                Section("Export") {
+                    Button {
+                        let pasteboard = NSPasteboard.general
+                        pasteboard.clearContents()
+                        pasteboard.setString(MarkdownExporter.markdown(for: note), forType: .string)
+                    } label: {
+                        Label("Copy Markdown", systemImage: "doc.on.doc")
+                    }
+                    if let url = try? MarkdownExporter.temporaryFileURL(for: note) {
+                        ShareLink(item: url) {
+                            Label("Share…", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
             } label: {
                 Label("Export", systemImage: "square.and.arrow.up")
             }
@@ -126,55 +137,6 @@ struct NoteDetailView: View {
                     .strokeBorder(Theme.panelStroke, lineWidth: 1)
             )
         }
-    }
-}
-
-/// Copy and share, combined: one modal with both export paths for the note's
-/// agent-ready Markdown.
-private struct ExportSheet: View {
-    let note: ReviewNote
-    @Environment(\.dismiss) private var dismiss
-    @State private var didCopy = false
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Label(note.title, systemImage: "doc.text")
-                .font(.headline)
-                .lineLimit(1)
-            Text("Export this review as agent-ready Markdown — summary, verdict, action items with detail, and open questions.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            HStack(spacing: 10) {
-                Button {
-                    let pasteboard = NSPasteboard.general
-                    pasteboard.clearContents()
-                    pasteboard.setString(MarkdownExporter.markdown(for: note), forType: .string)
-                    withAnimation { didCopy = true }
-                } label: {
-                    Label(didCopy ? "Copied" : "Copy Markdown",
-                          systemImage: didCopy ? "checkmark" : "doc.on.doc")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-
-                if let url = try? MarkdownExporter.temporaryFileURL(for: note) {
-                    ShareLink(item: url) {
-                        Label("Share…", systemImage: "square.and.arrow.up")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                }
-            }
-
-            Button("Done") { dismiss() }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .keyboardShortcut(.cancelAction)
-        }
-        .padding(24)
-        .frame(width: 380)
     }
 }
 
