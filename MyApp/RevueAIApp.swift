@@ -31,14 +31,14 @@ struct RevueAIApp: App {
 
     var body: some Scene {
         WindowGroup(id: "library") {
-            LibraryView()
+            RootShellView()
                 .environment(coordinator)
-                .frame(minWidth: 720, minHeight: 460)
+                .frame(minWidth: 980, minHeight: 560)
                 .tint(Theme.accent)
                 .preferredColorScheme(.dark)
         }
         .modelContainer(container)
-        .defaultSize(width: 900, height: 600)
+        .defaultSize(width: 1240, height: 720)
 
         MenuBarExtra {
             CapturePanelView()

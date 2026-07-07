@@ -24,7 +24,6 @@ struct NoteDetailView: View {
         }
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
-        .background { PremiumBackground() }
         .toolbar { exportToolbar }
     }
 
