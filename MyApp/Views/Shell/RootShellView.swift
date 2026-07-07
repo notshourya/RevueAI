@@ -1,5 +1,17 @@
 import SwiftUI
 import SwiftData
+import AppKit
+
+private extension NSView {
+    /// Depth-first search for a subview of the given type.
+    func firstSubview<T: NSView>(of type: T.Type) -> T? {
+        for subview in subviews {
+            if let match = subview as? T { return match }
+            if let nested = subview.firstSubview(of: type) { return nested }
+        }
+        return nil
+    }
+}
 
 /// The main window: the reviews sidebar with an Apple-Calendar-style mini
 /// month calendar pinned at its bottom, the reading pane as detail, and the
@@ -41,11 +53,7 @@ struct RootShellView: View {
             readerContent
         }
         .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
-        .toolbar {
-            ToolbarSpacer(.flexible)
-            DefaultToolbarItem(kind: .search)
-            ToolbarSpacer(.flexible)
-        }
+        .background(ToolbarSearchCenterer())
         .onSubmit(of: .search) {
             let text = assistantQuery
             assistantQuery = ""
@@ -182,6 +190,40 @@ struct RootShellView: View {
                     if active { withAnimation(.smooth) { showAssistant = true } }
                 }
             }
+    }
+
+    /// AppKit escape hatch: SwiftUI toolbars on this OS can't center items,
+    /// but AppKit can — Safari and Music center their fields via
+    /// `NSToolbar.centeredItemIdentifiers`. This probe finds the window's
+    /// toolbar, locates the bridged search item, and centers it. Retries
+    /// briefly because SwiftUI populates the toolbar asynchronously.
+    private struct ToolbarSearchCenterer: NSViewRepresentable {
+        func makeNSView(context: Context) -> NSView {
+            let view = NSView()
+            for delay in [0.1, 0.6, 1.5, 3.0] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak view] in
+                    guard let view else { return }
+                    Self.centerSearchItem(in: view.window)
+                }
+            }
+            return view
+        }
+
+        func updateNSView(_ nsView: NSView, context: Context) {
+            DispatchQueue.main.async { [weak nsView] in
+                Self.centerSearchItem(in: nsView?.window)
+            }
+        }
+
+        static func centerSearchItem(in window: NSWindow?) {
+            guard let toolbar = window?.toolbar else { return }
+            let searchItem = toolbar.items.first {
+                $0 is NSSearchToolbarItem || $0.view?.firstSubview(of: NSSearchField.self) != nil
+            }
+            guard let identifier = searchItem?.itemIdentifier,
+                  toolbar.centeredItemIdentifiers != [identifier] else { return }
+            toolbar.centeredItemIdentifiers = [identifier]
+        }
     }
 
     /// Zero-size probe that reports when the toolbar search field activates
