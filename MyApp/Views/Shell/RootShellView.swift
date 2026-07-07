@@ -36,6 +36,8 @@ struct RootShellView: View {
     @State private var floatingOrb = FloatingOrbController()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showOnboarding = false
+    @State private var notifier = ArmedMeetingNotifier()
+    @State private var duePrompt: PlannedCapture?
 
     var body: some View {
         NavigationSplitView {
@@ -59,6 +61,11 @@ struct RootShellView: View {
                 CalendarPane(model: calendarModel, onOpenNote: { note in
                     section = .reviews
                     selection = note
+                }, onArmChanged: {
+                    Task {
+                        await notifier.ensureAuthorization()
+                        notifier.sync(with: context)
+                    }
                 })
                 .navigationSplitViewColumnWidth(min: 320, ideal: 380)
             }
@@ -99,6 +106,68 @@ struct RootShellView: View {
                 Task { await coordinator.start(context: context) }
             }
         }
+        .overlay(alignment: .bottom) { promptCard }
+        .task {
+            notifier.activate(context: context)
+            notifier.onStartRequested = { planned in
+                startFromPlanned(planned)
+            }
+            notifier.sync(with: context)
+            // Poll for due armed meetings so the in-app card works even when
+            // notifications are denied. 30s granularity is plenty.
+            while !Task.isCancelled {
+                if coordinator.state == .idle {
+                    duePrompt = CapturePlanner.duePrompt(now: .now, in: context)
+                } else {
+                    duePrompt = nil
+                }
+                try? await Task.sleep(for: .seconds(30))
+            }
+        }
+    }
+
+    // MARK: - Armed-meeting prompt
+
+    @ViewBuilder
+    private var promptCard: some View {
+        if let planned = duePrompt {
+            HStack(spacing: 12) {
+                OrbView(state: .idle, size: 30)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("\(planned.title) started").font(Theme.rounded(13, .semibold))
+                    Text("Start listening?").font(Theme.rounded(11)).foregroundStyle(.secondary)
+                }
+                Button("Start") {
+                    let consumed = CapturePlanner.consumeMatch(eventID: planned.eventID,
+                                                               occurrence: planned.occurrenceDate,
+                                                               in: context)
+                    startFromPlanned(consumed ?? planned)
+                }
+                .buttonStyle(.borderedProminent)
+                Button {
+                    CapturePlanner.consumeMatch(eventID: planned.eventID,
+                                                occurrence: planned.occurrenceDate, in: context)
+                    duePrompt = nil
+                } label: {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+            }
+            .padding(12)
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .padding(.bottom, 16)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
+    private func startFromPlanned(_ planned: PlannedCapture) {
+        duePrompt = nil
+        let meeting = MeetingEvent(id: planned.eventID, seriesID: planned.seriesID,
+                                   title: planned.title, start: planned.occurrenceDate,
+                                   end: planned.occurrenceDate.addingTimeInterval(1800),
+                                   attendees: [], isRecurring: false)
+        Task { await coordinator.start(context: context, meeting: meeting) }
     }
 
     @ViewBuilder
