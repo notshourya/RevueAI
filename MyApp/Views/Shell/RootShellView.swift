@@ -230,7 +230,7 @@ struct RootShellView: View {
 
         @discardableResult
         static func centerSearchItem(in window: NSWindow?) -> Bool {
-            guard let toolbar = window?.toolbar else { return }
+            guard let toolbar = window?.toolbar else { return false }
             // Note: do NOT remove the sidebar tracking separators — they are
             // structural, and dropping them scrambles the section layout.
             // Centering is therefore within the content section, which is
