@@ -19,6 +19,7 @@ struct RootShellView: View {
     @State private var notifier = ArmedMeetingNotifier()
     @State private var duePrompt: PlannedCapture?
     @State private var showAssistant = false
+    @State private var assistantQuery = ""
     @State private var assistant = ReviewAssistant(container: SharedModel.container)
 
     private static let assistantSuggestions = [
@@ -39,19 +40,22 @@ struct RootShellView: View {
         } detail: {
             readerContent
         }
+        .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
         .toolbar {
             ToolbarSpacer(.flexible)
-            ToolbarItem(placement: .automatic) {
-                AssistantSearchPill {
-                    withAnimation(.smooth) { showAssistant = true }
-                }
-            }
+            DefaultToolbarItem(kind: .search)
             ToolbarSpacer(.flexible)
+        }
+        .onSubmit(of: .search) {
+            let text = assistantQuery
+            assistantQuery = ""
+            submitAssistantQuery(text)
         }
         .overlay(alignment: .top) {
             if showAssistant {
                 AssistantResultsCard(assistant: assistant,
                                      suggestions: Self.assistantSuggestions,
+                                     showsField: false,
                                      onAsk: { submitAssistantQuery($0) },
                                      onOpenNote: { noteID in
                                          withAnimation(.smooth) { showAssistant = false }
@@ -173,6 +177,24 @@ struct RootShellView: View {
     @ViewBuilder
     private var readerContent: some View {
         readerBody
+            .background {
+                SearchActivationBridge { active in
+                    if active { withAnimation(.smooth) { showAssistant = true } }
+                }
+            }
+    }
+
+    /// Zero-size probe that reports when the toolbar search field activates
+    /// (`isSearching` is only readable from inside the searchable container).
+    private struct SearchActivationBridge: View {
+        @Environment(\.isSearching) private var isSearching
+        var onChange: (Bool) -> Void
+
+        var body: some View {
+            Color.clear
+                .frame(width: 0, height: 0)
+                .onChange(of: isSearching) { _, active in onChange(active) }
+        }
     }
 
     @ViewBuilder

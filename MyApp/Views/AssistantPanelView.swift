@@ -38,6 +38,9 @@ struct AssistantSearchPill: View {
 struct AssistantResultsCard: View {
     var assistant: ReviewAssistant
     var suggestions: [String] = []
+    /// When the input lives in the native toolbar search field, the card
+    /// hides its own field and shows only suggestions/answers.
+    var showsField: Bool = true
     var onAsk: (String) -> Void
     var onOpenNote: (UUID) -> Void
     var onClose: () -> Void
@@ -47,40 +50,11 @@ struct AssistantResultsCard: View {
 
     var body: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                TextField("Ask about your reviews…", text: $question)
-                    .textFieldStyle(.plain)
-                    .font(.body)
-                    .focused($fieldFocused)
-                    .onSubmit {
-                        let text = question
-                        question = ""
-                        onAsk(text)
-                    }
-                    .disabled(assistant.isThinking)
-                if !assistant.exchanges.isEmpty {
-                    Button {
-                        assistant.clear()
-                    } label: {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .help("Clear the conversation")
-                }
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help("Close (Esc)")
+            if showsField {
+                fieldRow
+            } else {
+                headerRow
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .glassEffect(.regular, in: .capsule)
 
             if !assistant.isAvailable {
                 unavailable
@@ -95,8 +69,60 @@ struct AssistantResultsCard: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .padding(.top, 10)
         .transition(.move(edge: .top).combined(with: .opacity))
-        .onAppear { fieldFocused = true }
+        .onAppear { if showsField { fieldFocused = true } }
         .onExitCommand(perform: onClose)
+    }
+
+    private var fieldRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+            TextField("Ask about your reviews…", text: $question)
+                .textFieldStyle(.plain)
+                .font(.body)
+                .focused($fieldFocused)
+                .onSubmit {
+                    let text = question
+                    question = ""
+                    onAsk(text)
+                }
+                .disabled(assistant.isThinking)
+            trailingButtons
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .glassEffect(.regular, in: .capsule)
+    }
+
+    private var headerRow: some View {
+        HStack(spacing: 8) {
+            Label("Assistant", systemImage: "sparkles")
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Spacer()
+            trailingButtons
+        }
+    }
+
+    @ViewBuilder
+    private var trailingButtons: some View {
+        if !assistant.exchanges.isEmpty {
+            Button {
+                assistant.clear()
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Clear the conversation")
+        }
+        Button(action: onClose) {
+            Image(systemName: "xmark")
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .help("Close (Esc)")
     }
 
     private var suggestionRows: some View {
