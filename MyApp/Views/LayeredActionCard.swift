@@ -7,6 +7,7 @@ struct ActionRow: View {
     let item: ActionItem
     var isSelected = false
     var onToggleSelect: () -> Void = {}
+    var showDetailOnAppear = false
 
     @State private var showDetail = false
 
@@ -31,6 +32,14 @@ struct ActionRow: View {
                 .foregroundStyle(item.isDone ? .secondary : .primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
+            if item.userModified || item.isUserCreated {
+                Circle()
+                    .fill(Theme.accent.opacity(0.9))
+                    .frame(width: 5, height: 5)
+                    .padding(.top, 5)
+                    .help("Edited by you — polish won't overwrite it")
+            }
+
             Image(systemName: "arrow.up.forward.square")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.tertiary)
@@ -42,6 +51,7 @@ struct ActionRow: View {
         .popover(isPresented: $showDetail, arrowEdge: .trailing) {
             ActionItemDetail(item: item)
         }
+        .onAppear { if showDetailOnAppear { showDetail = true } }
         .glassEffect(isSelected ? .regular.tint(Theme.accent.opacity(0.3)) : .regular, in: .rect(cornerRadius: 11))
         .overlay(
             RoundedRectangle(cornerRadius: 11, style: .continuous)

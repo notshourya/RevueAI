@@ -18,6 +18,7 @@ struct ReviewBoard: View {
 
     @Environment(\.modelContext) private var context
     @State private var selection: Set<UUID> = []
+    @State private var newItemID: UUID?
 
     private var openItems: [ActionItem] { note.sortedActionItems.filter { !$0.isDone } }
     private var doneItems: [ActionItem] { note.sortedActionItems.filter { $0.isDone } }
@@ -30,7 +31,7 @@ struct ReviewBoard: View {
             HStack(alignment: .top, spacing: 12) {
                 actionColumn("To Do", systemImage: "circle.dashed",
                              items: openItems, markCompleted: false,
-                             emptyText: "No open items.")
+                             emptyText: "No open items.", showsAddRow: true)
                 actionColumn("Completed", systemImage: "checkmark.circle.fill",
                              items: doneItems, markCompleted: true,
                              emptyText: "Drag items here.")
@@ -64,22 +65,62 @@ struct ReviewBoard: View {
 
     // MARK: - Columns
 
-    private func actionColumn(_ title: String, systemImage: String, items: [ActionItem], markCompleted: Bool, emptyText: String) -> some View {
+    private func actionColumn(_ title: String, systemImage: String, items: [ActionItem], markCompleted: Bool, emptyText: String, showsAddRow: Bool = false) -> some View {
         BoardColumn(title: title, systemImage: systemImage, count: items.count,
                     accent: markCompleted ? Color(red: 0.35, green: 0.85, blue: 0.55) : .secondary,
                     isEmpty: items.isEmpty, emptyText: emptyText,
-                    dropAction: { ids in apply(ids, done: markCompleted) }) {
+                    dropAction: { ids in apply(ids, done: markCompleted) },
+                    footer: showsAddRow ? AnyView(addItemRow) : nil) {
             ForEach(items) { item in
-                ActionRow(item: item, isSelected: selection.contains(item.id)) {
-                    toggleSelect(item.id)
-                }
+                ActionRow(item: item, isSelected: selection.contains(item.id),
+                          onToggleSelect: { toggleSelect(item.id) },
+                          showDetailOnAppear: item.id == newItemID)
                 .draggable(containerItemID: item.id)
                 .contextMenu {
                     Button(item.isDone ? "Reopen" : "Mark complete") { apply([item.id], done: !item.isDone) }
                     Button(selection.contains(item.id) ? "Deselect" : "Select") { toggleSelect(item.id) }
+                    Divider()
+                    Button("Move up") { move(item, within: items, by: -1) }
+                        .disabled(items.first?.id == item.id)
+                    Button("Move down") { move(item, within: items, by: 1) }
+                        .disabled(items.last?.id == item.id)
                 }
             }
         }
+    }
+
+    private var addItemRow: some View {
+        Button {
+            let item = ActionItem(
+                oneLiner: "New action item",
+                isUserCreated: true,
+                order: (note.actionItems?.map(\.order).max() ?? -1) + 1
+            )
+            item.note = note
+            context.insert(item)
+            try? context.save()
+            newItemID = item.id
+        } label: {
+            Label("Add action item", systemImage: "plus.circle")
+                .font(Theme.rounded(12, .medium))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Swaps `order` with the neighbor in the same column; a user-initiated
+    /// reorder locks the item like any other edit.
+    private func move(_ item: ActionItem, within items: [ActionItem], by delta: Int) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }),
+              items.indices.contains(index + delta) else { return }
+        let neighbor = items[index + delta]
+        withAnimation(.smooth) {
+            swap(&item.order, &neighbor.order)
+            item.userModified = true
+        }
+        try? context.save()
     }
 
     private var questionsColumn: some View {
@@ -121,6 +162,7 @@ private struct BoardColumn<Content: View>: View {
     let emptyText: String
     /// When non-nil, the column accepts dropped action items.
     let dropAction: (([UUID]) -> Void)?
+    var footer: AnyView? = nil
     @ViewBuilder var content: Content
 
     @State private var isTargeted = false
@@ -143,6 +185,7 @@ private struct BoardColumn<Content: View>: View {
             } else {
                 VStack(spacing: 8) { content }
             }
+            if let footer { footer }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(12)

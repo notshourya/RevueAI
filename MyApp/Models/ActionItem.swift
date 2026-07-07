@@ -91,4 +91,11 @@ final class ActionItem {
     var hasDepth: Bool {
         !rationale.isEmpty || !inDepthDetail.isEmpty || !supportingQuotes.isEmpty
     }
+
+    /// Every distinct tag across all action items, sorted — the autocomplete
+    /// source for the tag editor.
+    static func allTags(in context: ModelContext) -> [String] {
+        let items = (try? context.fetch(FetchDescriptor<ActionItem>())) ?? []
+        return Set(items.flatMap(\.tags)).sorted()
+    }
 }
