@@ -5,6 +5,8 @@ import SwiftData
 /// toolbar (Apple Music search style) showing the session thread.
 struct AssistantResultsCard: View {
     var assistant: ReviewAssistant
+    var suggestions: [String] = []
+    var onAskSuggestion: (String) -> Void = { _ in }
     var onOpenNote: (UUID) -> Void
     var onClose: () -> Void
 
@@ -33,17 +35,44 @@ struct AssistantResultsCard: View {
                 .help("Close")
             }
 
-            if assistant.isAvailable {
-                thread
-            } else {
+            if !assistant.isAvailable {
                 unavailable
+            } else if assistant.exchanges.isEmpty && !assistant.isThinking {
+                suggestionRows
+            } else {
+                thread
             }
         }
         .padding(14)
-        .frame(width: 480)
+        .frame(width: 560)
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .padding(.top, 10)
         .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    private var suggestionRows: some View {
+        VStack(spacing: 4) {
+            ForEach(suggestions, id: \.self) { suggestion in
+                Button {
+                    onAskSuggestion(suggestion)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+                        Text(suggestion)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .glassEffect(.regular, in: .rect(cornerRadius: 10))
+            }
+        }
     }
 
     private var thread: some View {

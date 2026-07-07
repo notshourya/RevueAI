@@ -41,16 +41,8 @@ struct RootShellView: View {
             readerContent
         }
         .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
-        .searchSuggestions {
-            if assistantQuery.isEmpty {
-                ForEach(Self.assistantSuggestions, id: \.self) { suggestion in
-                    Button {
-                        submitAssistantQuery(suggestion)
-                    } label: {
-                        Label(suggestion, systemImage: "sparkles")
-                    }
-                }
-            }
+        .toolbar {
+            DefaultToolbarItem(kind: .search, placement: .principal)
         }
         .onSubmit(of: .search) {
             submitAssistantQuery(assistantQuery)
@@ -58,6 +50,8 @@ struct RootShellView: View {
         .overlay(alignment: .top) {
             if showAssistant {
                 AssistantResultsCard(assistant: assistant,
+                                     suggestions: Self.assistantSuggestions,
+                                     onAskSuggestion: { submitAssistantQuery($0) },
                                      onOpenNote: { noteID in
                                          withAnimation(.smooth) { showAssistant = false }
                                          openNote(id: noteID)
@@ -149,6 +143,19 @@ struct RootShellView: View {
         }
     }
 
+    /// Zero-size probe that reports when the toolbar search field activates
+    /// (`isSearching` is only readable from inside the searchable container).
+    private struct SearchActivationBridge: View {
+        @Environment(\.isSearching) private var isSearching
+        var onChange: (Bool) -> Void
+
+        var body: some View {
+            Color.clear
+                .frame(width: 0, height: 0)
+                .onChange(of: isSearching) { _, active in onChange(active) }
+        }
+    }
+
     private func submitAssistantQuery(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -178,6 +185,16 @@ struct RootShellView: View {
 
     @ViewBuilder
     private var readerContent: some View {
+        readerBody
+            .background {
+                SearchActivationBridge { active in
+                    if active { withAnimation(.smooth) { showAssistant = true } }
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var readerBody: some View {
         if showCalendarSurface {
             CalendarSurfaceView(model: calendarModel,
                                 onOpenNote: { note in
