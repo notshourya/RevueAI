@@ -10,6 +10,9 @@ struct RootShellView: View {
     @State private var selection: ReviewNote?
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
+    @Environment(\.modelContext) private var context
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var showOnboarding = false
 
     var body: some View {
         ZStack {
@@ -46,6 +49,17 @@ struct RootShellView: View {
         }
         .onChange(of: floatingOrbEnabled) { _, enabled in
             floatingOrb.update(state: coordinator.state, enabled: enabled, coordinator: coordinator)
+        }
+        .onAppear {
+            if !hasCompletedOnboarding { showOnboarding = true }
+        }
+        .onChange(of: hasCompletedOnboarding) { _, completed in
+            if !completed { showOnboarding = true }
+        }
+        .sheet(isPresented: $showOnboarding, onDismiss: { hasCompletedOnboarding = true }) {
+            OnboardingSheet(isPresented: $showOnboarding) {
+                Task { await coordinator.start(context: context) }
+            }
         }
     }
 

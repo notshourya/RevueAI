@@ -59,5 +59,10 @@ struct RevueAIApp: App {
             Image(systemName: coordinator.state == .listening ? "waveform.circle.fill" : "waveform.circle")
         }
         .menuBarExtraStyle(.window)
+
+        Settings {
+            SettingsView()
+                .tint(Theme.accent)
+        }
     }
 }
