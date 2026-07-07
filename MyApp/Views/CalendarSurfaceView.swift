@@ -8,6 +8,7 @@ struct CalendarSurfaceView: View {
     var model: CalendarPaneModel
     var onOpenNote: (ReviewNote) -> Void
     var onArmChanged: () -> Void = {}
+    var onClose: () -> Void = {}
 
     @Environment(\.modelContext) private var context
     @State private var refreshToken = 0
@@ -48,6 +49,10 @@ struct CalendarSurfaceView: View {
                 Image(systemName: "chevron.right")
             }
             .help("Next month")
+            Button(action: onClose) {
+                Image(systemName: "xmark")
+            }
+            .help("Back to the review")
         }
         .buttonStyle(.bordered)
         .padding(.bottom, 12)

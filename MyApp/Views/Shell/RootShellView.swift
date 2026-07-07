@@ -19,7 +19,7 @@ struct RootShellView: View {
     @State private var notifier = ArmedMeetingNotifier()
     @State private var duePrompt: PlannedCapture?
     @State private var showAssistant = false
-    @State private var assistant: ReviewAssistant?
+    @State private var assistant = ReviewAssistant(container: SharedModel.container)
 
     var body: some View {
         NavigationSplitView {
@@ -27,10 +27,7 @@ struct RootShellView: View {
                         calendarModel: calendarModel,
                         onOpenCalendar: { day in
                             calendarModel.selectedDay = day
-                            withAnimation(.smooth) {
-                                selection = nil
-                                showCalendarSurface = true
-                            }
+                            withAnimation(.smooth) { showCalendarSurface = true }
                         })
                 .navigationSplitViewColumnWidth(min: 270, ideal: 320)
         } detail: {
@@ -38,9 +35,7 @@ struct RootShellView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                if let assistant {
-                    AssistantSearchBar(isPresented: $showAssistant, assistant: assistant)
-                }
+                AssistantSearchBar(isPresented: $showAssistant, assistant: assistant)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .revueOpenNote)) { notification in
@@ -61,9 +56,6 @@ struct RootShellView: View {
         }
         .onAppear {
             if !hasCompletedOnboarding { showOnboarding = true }
-            if assistant == nil {
-                assistant = ReviewAssistant(container: context.container)
-            }
         }
         .onChange(of: hasCompletedOnboarding) { _, completed in
             if !completed { showOnboarding = true }
@@ -156,12 +148,20 @@ struct RootShellView: View {
     private var readerContent: some View {
         if showCalendarSurface {
             CalendarSurfaceView(model: calendarModel,
-                                onOpenNote: { note in selection = note },
+                                onOpenNote: { note in
+                                    withAnimation(.smooth) {
+                                        showCalendarSurface = false
+                                        selection = note
+                                    }
+                                },
                                 onArmChanged: {
                                     Task {
                                         await notifier.ensureAuthorization()
                                         notifier.sync(with: context)
                                     }
+                                },
+                                onClose: {
+                                    withAnimation(.smooth) { showCalendarSurface = false }
                                 })
         } else if let selection {
             NoteDetailView(note: selection)
