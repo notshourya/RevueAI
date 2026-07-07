@@ -1,22 +1,66 @@
 import SwiftUI
 import SwiftData
 
-/// The assistant's answer surface: a liquid-glass card dropped below the
-/// toolbar (Apple Music search style) showing the session thread.
+/// The collapsed assistant: a floating glass search pill, pinned top-center
+/// of the content area (Apple Music style). Clicking expands the card.
+struct AssistantSearchPill: View {
+    var onActivate: () -> Void
+
+    var body: some View {
+        Button(action: onActivate) {
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Text("Ask about your reviews…")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 0)
+                Text("⌘K")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .frame(width: 320)
+            .glassEffect(.regular, in: .capsule)
+            .overlay(Capsule().strokeBorder(.secondary.opacity(0.25), lineWidth: 1))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut("k", modifiers: .command)
+        .help("Ask the assistant about your reviews (⌘K)")
+    }
+}
+
+/// The expanded assistant: query field on top (auto-focused), suggestions
+/// while the thread is empty, the session thread below — all liquid glass.
 struct AssistantResultsCard: View {
     var assistant: ReviewAssistant
     var suggestions: [String] = []
-    var onAskSuggestion: (String) -> Void = { _ in }
+    var onAsk: (String) -> Void
     var onOpenNote: (UUID) -> Void
     var onClose: () -> Void
 
+    @State private var question = ""
+    @FocusState private var fieldFocused: Bool
+
     var body: some View {
         VStack(spacing: 10) {
-            HStack {
-                Label("Assistant", systemImage: "sparkles")
-                    .font(.callout.weight(.semibold))
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.secondary)
-                Spacer()
+                TextField("Ask about your reviews…", text: $question)
+                    .textFieldStyle(.plain)
+                    .font(.body)
+                    .focused($fieldFocused)
+                    .onSubmit {
+                        let text = question
+                        question = ""
+                        onAsk(text)
+                    }
+                    .disabled(assistant.isThinking)
                 if !assistant.exchanges.isEmpty {
                     Button {
                         assistant.clear()
@@ -32,8 +76,11 @@ struct AssistantResultsCard: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help("Close")
+                .help("Close (Esc)")
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .glassEffect(.regular, in: .capsule)
 
             if !assistant.isAvailable {
                 unavailable
@@ -48,13 +95,15 @@ struct AssistantResultsCard: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
         .padding(.top, 10)
         .transition(.move(edge: .top).combined(with: .opacity))
+        .onAppear { fieldFocused = true }
+        .onExitCommand(perform: onClose)
     }
 
     private var suggestionRows: some View {
         VStack(spacing: 4) {
             ForEach(suggestions, id: \.self) { suggestion in
                 Button {
-                    onAskSuggestion(suggestion)
+                    onAsk(suggestion)
                 } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "magnifyingglass")

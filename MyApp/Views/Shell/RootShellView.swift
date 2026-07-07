@@ -19,7 +19,6 @@ struct RootShellView: View {
     @State private var notifier = ArmedMeetingNotifier()
     @State private var duePrompt: PlannedCapture?
     @State private var showAssistant = false
-    @State private var assistantQuery = ""
     @State private var assistant = ReviewAssistant(container: SharedModel.container)
 
     private static let assistantSuggestions = [
@@ -40,18 +39,11 @@ struct RootShellView: View {
         } detail: {
             readerContent
         }
-        .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
-        .toolbar {
-            DefaultToolbarItem(kind: .search, placement: .principal)
-        }
-        .onSubmit(of: .search) {
-            submitAssistantQuery(assistantQuery)
-        }
         .overlay(alignment: .top) {
             if showAssistant {
                 AssistantResultsCard(assistant: assistant,
                                      suggestions: Self.assistantSuggestions,
-                                     onAskSuggestion: { submitAssistantQuery($0) },
+                                     onAsk: { submitAssistantQuery($0) },
                                      onOpenNote: { noteID in
                                          withAnimation(.smooth) { showAssistant = false }
                                          openNote(id: noteID)
@@ -143,23 +135,9 @@ struct RootShellView: View {
         }
     }
 
-    /// Zero-size probe that reports when the toolbar search field activates
-    /// (`isSearching` is only readable from inside the searchable container).
-    private struct SearchActivationBridge: View {
-        @Environment(\.isSearching) private var isSearching
-        var onChange: (Bool) -> Void
-
-        var body: some View {
-            Color.clear
-                .frame(width: 0, height: 0)
-                .onChange(of: isSearching) { _, active in onChange(active) }
-        }
-    }
-
     private func submitAssistantQuery(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        assistantQuery = ""
         withAnimation(.smooth) { showAssistant = true }
         Task { await assistant.ask(trimmed) }
     }
@@ -186,9 +164,12 @@ struct RootShellView: View {
     @ViewBuilder
     private var readerContent: some View {
         readerBody
-            .background {
-                SearchActivationBridge { active in
-                    if active { withAnimation(.smooth) { showAssistant = true } }
+            .safeAreaInset(edge: .top) {
+                if !showAssistant {
+                    AssistantSearchPill {
+                        withAnimation(.smooth) { showAssistant = true }
+                    }
+                    .padding(.vertical, 6)
                 }
             }
     }
