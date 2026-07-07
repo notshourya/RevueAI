@@ -7,6 +7,7 @@ import AppKit
 struct NoteDetailView: View {
     @Bindable var note: ReviewNote
     @State private var didCopy = false
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         ScrollView {
@@ -127,8 +128,10 @@ struct NoteDetailView: View {
                         Text("•")
                         Text(decision.statement)
                     }
-                    .font(.system(size: 13, design: .rounded))
+                    .font(Theme.rounded(13))
                     .foregroundStyle(.primary.opacity(0.9))
+                    .contentShape(Rectangle())
+                    .onTapGesture { openWindow(value: ItemPopupRef.decision(decision.id)) }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
