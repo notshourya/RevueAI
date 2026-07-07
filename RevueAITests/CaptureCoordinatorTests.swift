@@ -131,4 +131,26 @@ struct CaptureCoordinatorTests {
             pending: 10, elapsedSinceLastRun: .seconds(20), threshold: 6, interval: .seconds(20),
             lastAttemptFailed: true))
     }
+
+    @Test func startWithMeetingStampsSnapshotAndTitle() async throws {
+        let context = try makeInMemoryContext()
+        let mic = MockTranscriptionService(phrases: ["hello"], interval: .milliseconds(5))
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub())]
+        let coordinator = CaptureCoordinator(
+            transcription: mic,
+            systemTranscription: FailingTranscriptionService(),
+            model: model
+        )
+        coordinator.captureSystemAudio = false
+        let meeting = MeetingEvent.stub(title: "Sprint review")
+        CapturePlanner.arm(meeting, in: context)
+        await coordinator.start(context: context, meeting: meeting)
+        let note = try #require(try context.fetch(FetchDescriptor<ReviewNote>()).first)
+        #expect(note.title == "Sprint review")
+        #expect(note.meetingSnapshot?.attendees == ["Priya", "Marcus"])
+        #expect(note.meetingSnapshot?.seriesID == "series-1")
+        #expect(!CapturePlanner.isArmed(meeting, in: context))
+        await coordinator.stop()
+    }
 }

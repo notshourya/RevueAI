@@ -250,4 +250,19 @@ struct FinalPolisherTests {
         #expect(note.sortedActionItems.map(\.oneLiner) == ["Edited A", "Edited B", "New from AI"])
         #expect(note.sortedActionItems.map(\.order) == [0, 1, 2])
     }
+
+    @Test func polishPromptIncludesAttendeeHints() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let snapshot = MeetingSnapshot(title: "Review", seriesID: "s", occurrenceDate: .now, attendees: ["Priya", "Marcus"])
+        snapshot.note = note
+        context.insert(snapshot)
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub())]
+        let polisher = FinalPolisher(model: model)
+        await polisher.polish(note: note, segments: [seg("hi")], context: context)
+        let call = try #require(model.polishCalls.first)
+        #expect(call.livePoints.contains("Attendees: Priya, Marcus"))
+    }
 }

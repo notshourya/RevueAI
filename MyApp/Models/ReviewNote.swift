@@ -41,6 +41,10 @@ final class ReviewNote {
     @Relationship(deleteRule: .cascade, inverse: \Speaker.note)
     var speakers: [Speaker]? = []
 
+    /// The meeting this note was captured from, if started from the calendar.
+    @Relationship(deleteRule: .cascade, inverse: \MeetingSnapshot.note)
+    var meetingSnapshot: MeetingSnapshot?
+
     init(
         id: UUID = UUID(),
         title: String = "",

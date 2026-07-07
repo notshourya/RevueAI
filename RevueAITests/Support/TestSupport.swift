@@ -10,6 +10,8 @@ func makeInMemoryContext() throws -> ModelContext {
         OpenQuestion.self,
         Decision.self,
         Speaker.self,
+        PlannedCapture.self,
+        MeetingSnapshot.self,
     ])
     let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
     let container = try ModelContainer(for: schema, configurations: [configuration])

@@ -91,7 +91,7 @@ final class CaptureCoordinator {
 
     // MARK: - Lifecycle
 
-    func start(context: ModelContext) async {
+    func start(context: ModelContext, meeting: MeetingEvent? = nil) async {
         guard state == .idle else { return }
         errorMessage = nil
         lastExtractionFailed = false
@@ -109,6 +109,14 @@ final class CaptureCoordinator {
         model.prewarm()
 
         let note = ReviewNote(title: Self.defaultTitle(), date: .now, status: .capturing)
+        if let meeting {
+            note.title = meeting.title
+            let snapshot = MeetingSnapshot(title: meeting.title, seriesID: meeting.seriesID,
+                                           occurrenceDate: meeting.start, attendees: meeting.attendees)
+            context.insert(snapshot)
+            snapshot.note = note
+            CapturePlanner.consume(eventID: meeting.id, occurrenceDate: meeting.start, in: context)
+        }
         context.insert(note)
         try? context.save()
         currentNote = note

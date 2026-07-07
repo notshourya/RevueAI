@@ -17,6 +17,8 @@ struct RevueAIApp: App {
                 OpenQuestion.self,
                 Decision.self,
                 Speaker.self,
+                PlannedCapture.self,
+                MeetingSnapshot.self,
             ])
             // Local store for Milestone 1. The schema is CloudKit-ready, so
             // enabling iCloud sync later is a configuration change (add the

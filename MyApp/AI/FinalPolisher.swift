@@ -21,7 +21,11 @@ final class FinalPolisher {
         note.status = .processing
         try? context.save()
 
-        let livePoints = LiveExtractor.knownPointsSummary(for: note)
+        var livePoints = LiveExtractor.knownPointsSummary(for: note)
+        if let snapshot = note.meetingSnapshot, !snapshot.attendees.isEmpty {
+            let hint = "Attendees: " + snapshot.attendees.joined(separator: ", ")
+            livePoints = livePoints.isEmpty ? hint : livePoints + "\n" + hint
+        }
         do {
             let result: PolishedReview
             if TranscriptWindower.estimatedTokens(segments) <= model.contextTokenBudget {
