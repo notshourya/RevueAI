@@ -68,6 +68,19 @@ final class CalendarPaneModel {
     /// The selected day's meetings, joined to captured notes and series history.
     func agenda(in context: ModelContext) -> [AgendaEntry] {
         guard let interval = cal.dateInterval(of: .day, for: selectedDay) else { return [] }
+        return entries(in: interval, context: context)
+    }
+
+    /// The displayed month's meetings grouped by day-of-month — the full
+    /// calendar surface's data source. One events fetch for the whole month.
+    func monthAgenda(in context: ModelContext) -> [Int: [AgendaEntry]] {
+        guard let interval = cal.dateInterval(of: .month, for: displayedMonth) else { return [:] }
+        return Dictionary(grouping: entries(in: interval, context: context)) {
+            cal.component(.day, from: $0.event.start)
+        }
+    }
+
+    private func entries(in interval: DateInterval, context: ModelContext) -> [AgendaEntry] {
         let events = calendar.events(from: interval.start, to: interval.end)
         let snapshots = (try? context.fetch(FetchDescriptor<MeetingSnapshot>())) ?? []
         return events.map { event in

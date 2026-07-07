@@ -10,6 +10,7 @@ struct RootShellView: View {
     @Environment(CaptureCoordinator.self) private var coordinator
     @Environment(\.modelContext) private var context
     @State private var selection: ReviewNote?
+    @State private var showCalendarSurface = false
     @State private var calendarModel = CalendarPaneModel(calendar: CalendarService())
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
@@ -22,10 +23,11 @@ struct RootShellView: View {
         NavigationSplitView {
             LibraryPane(selection: $selection,
                         calendarModel: calendarModel,
-                        onArmChanged: {
-                            Task {
-                                await notifier.ensureAuthorization()
-                                notifier.sync(with: context)
+                        onOpenCalendar: { day in
+                            calendarModel.selectedDay = day
+                            withAnimation(.smooth) {
+                                selection = nil
+                                showCalendarSurface = true
                             }
                         })
                 .navigationSplitViewColumnWidth(min: 270, ideal: 320)
@@ -34,6 +36,11 @@ struct RootShellView: View {
         }
         .onChange(of: coordinator.state) { _, newValue in
             floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
+        }
+        .onChange(of: selection) { _, newValue in
+            if newValue != nil {
+                withAnimation(.smooth) { showCalendarSurface = false }
+            }
         }
         .onChange(of: floatingOrbEnabled) { _, enabled in
             floatingOrb.update(state: coordinator.state, enabled: enabled, coordinator: coordinator)
@@ -120,7 +127,16 @@ struct RootShellView: View {
 
     @ViewBuilder
     private var readerContent: some View {
-        if let selection {
+        if showCalendarSurface {
+            CalendarSurfaceView(model: calendarModel,
+                                onOpenNote: { note in selection = note },
+                                onArmChanged: {
+                                    Task {
+                                        await notifier.ensureAuthorization()
+                                        notifier.sync(with: context)
+                                    }
+                                })
+        } else if let selection {
             NoteDetailView(note: selection)
         } else {
             ZStack {

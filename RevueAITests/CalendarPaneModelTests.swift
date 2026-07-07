@@ -41,6 +41,30 @@ struct CalendarPaneModelTests {
         #expect(agenda[1].note == nil)
     }
 
+    @Test func monthAgendaGroupsEntriesByDay() throws {
+        let context = try makeInMemoryContext()
+        let fake = FakeMeetingCalendar()
+        fake.stubbedEvents = [
+            MeetingEvent.stub(id: "e1", seriesID: "s1", title: "Sprint review", start: day(2026, 7, 15)),
+            MeetingEvent.stub(id: "e2", seriesID: "s2", title: "1:1", start: day(2026, 7, 15, hour: 14)),
+            MeetingEvent.stub(id: "e3", seriesID: "s3", title: "Retro", start: day(2026, 7, 20)),
+        ]
+        let note = ReviewNote(title: "Sprint review")
+        context.insert(note)
+        let snapshot = MeetingSnapshot(title: "Sprint review", seriesID: "s1", occurrenceDate: day(2026, 7, 15))
+        snapshot.note = note
+        context.insert(snapshot)
+        try context.save()
+
+        let model = CalendarPaneModel(calendar: fake)
+        model.displayedMonth = day(2026, 7, 1)
+        let byDay = model.monthAgenda(in: context)
+        #expect(byDay[15]?.count == 2)
+        #expect(byDay[15]?.first?.note?.title == "Sprint review")
+        #expect(byDay[20]?.count == 1)
+        #expect(byDay[9] == nil)
+    }
+
     @Test func daysWithNotesMarksSnapshotDays() throws {
         let context = try makeInMemoryContext()
         let snapshot = MeetingSnapshot(title: "R", seriesID: "s", occurrenceDate: day(2026, 7, 9))

@@ -11,7 +11,7 @@ struct LibraryPane: View {
 
     @Binding var selection: ReviewNote?
     var calendarModel: CalendarPaneModel
-    var onArmChanged: () -> Void = {}
+    var onOpenCalendar: (Date) -> Void = { _ in }
 
     @State private var showArchived = false
 
@@ -83,9 +83,7 @@ struct LibraryPane: View {
     private var bottomDock: some View {
         VStack(spacing: 0) {
             Divider()
-            MiniCalendarView(model: calendarModel,
-                             onOpenNote: { selection = $0 },
-                             onArmChanged: onArmChanged)
+            MiniCalendarView(model: calendarModel, onOpenDay: onOpenCalendar)
         }
         .background(.ultraThinMaterial)
     }
