@@ -19,7 +19,14 @@ struct RootShellView: View {
     @State private var notifier = ArmedMeetingNotifier()
     @State private var duePrompt: PlannedCapture?
     @State private var showAssistant = false
+    @State private var assistantQuery = ""
     @State private var assistant = ReviewAssistant(container: SharedModel.container)
+
+    private static let assistantSuggestions = [
+        "Which action items are still open?",
+        "What did we decide recently?",
+        "Summarize last week's reviews",
+    ]
 
     var body: some View {
         NavigationSplitView {
@@ -33,14 +40,31 @@ struct RootShellView: View {
         } detail: {
             readerContent
         }
-        .toolbar {
-            ToolbarItem(placement: .status) {
-                AssistantSearchBar(isPresented: $showAssistant, assistant: assistant)
+        .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
+        .searchSuggestions {
+            if assistantQuery.isEmpty {
+                ForEach(Self.assistantSuggestions, id: \.self) { suggestion in
+                    Button {
+                        submitAssistantQuery(suggestion)
+                    } label: {
+                        Label(suggestion, systemImage: "sparkles")
+                    }
+                }
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .revueOpenNote)) { notification in
-            if let id = notification.userInfo?["id"] as? UUID {
-                openNote(id: id)
+        .onSubmit(of: .search) {
+            submitAssistantQuery(assistantQuery)
+        }
+        .overlay(alignment: .top) {
+            if showAssistant {
+                AssistantResultsCard(assistant: assistant,
+                                     onOpenNote: { noteID in
+                                         withAnimation(.smooth) { showAssistant = false }
+                                         openNote(id: noteID)
+                                     },
+                                     onClose: {
+                                         withAnimation(.smooth) { showAssistant = false }
+                                     })
             }
         }
         .onChange(of: coordinator.state) { _, newValue in
@@ -123,6 +147,14 @@ struct RootShellView: View {
             .padding(.bottom, 16)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+    }
+
+    private func submitAssistantQuery(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        assistantQuery = ""
+        withAnimation(.smooth) { showAssistant = true }
+        Task { await assistant.ask(trimmed) }
     }
 
     private func openNote(id: UUID) {

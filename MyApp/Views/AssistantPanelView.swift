@@ -1,159 +1,58 @@
 import SwiftUI
 import SwiftData
 
-/// The assistant's search-bar face for the toolbar: a glass capsule that
-/// looks like a search field and anchors the query popover below itself.
-struct AssistantSearchBar: View {
-    @Binding var isPresented: Bool
+/// The assistant's answer surface: a liquid-glass card dropped below the
+/// toolbar (Apple Music search style) showing the session thread.
+struct AssistantResultsCard: View {
     var assistant: ReviewAssistant
+    var onOpenNote: (UUID) -> Void
+    var onClose: () -> Void
 
     var body: some View {
-        Button {
-            isPresented.toggle()
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 11, weight: .semibold))
+        VStack(spacing: 10) {
+            HStack {
+                Label("Assistant", systemImage: "sparkles")
+                    .font(.callout.weight(.semibold))
                     .foregroundStyle(.secondary)
-                Text("Ask about your reviews…")
-                    .font(.callout)
+                Spacer()
+                if !assistant.exchanges.isEmpty {
+                    Button {
+                        assistant.clear()
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                    .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                Spacer(minLength: 0)
+                    .help("Clear the conversation")
+                }
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .help("Close")
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .frame(width: 280)
-            .glassEffect(.regular, in: .capsule)
-            .overlay(Capsule().strokeBorder(.secondary.opacity(0.35), lineWidth: 1))
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .help("Ask the assistant about your reviews")
-        .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            AssistantPopoverView(assistant: assistant, isPresented: $isPresented)
-        }
-    }
-}
 
-/// The expanded assistant: query field on top (focused on open), suggestion
-/// rows when the thread is empty, and the session thread below — every
-/// surface liquid glass.
-struct AssistantPopoverView: View {
-    var assistant: ReviewAssistant
-    @Binding var isPresented: Bool
-
-    @Environment(\.modelContext) private var context
-    @State private var question = ""
-    @FocusState private var fieldFocused: Bool
-
-    private static let suggestions = [
-        "Which action items are still open?",
-        "What did we decide recently?",
-        "Summarize last week's reviews",
-    ]
-
-    var body: some View {
-        Group {
             if assistant.isAvailable {
-                content
+                thread
             } else {
                 unavailable
             }
         }
-        .frame(width: 440)
-        .presentationBackground(.clear)
-    }
-
-    private var content: some View {
-        VStack(spacing: 10) {
-            queryField
-            if assistant.exchanges.isEmpty && !assistant.isThinking {
-                suggestionRows
-            }
-            if !assistant.exchanges.isEmpty || assistant.isThinking {
-                thread
-            }
-        }
-        .padding(12)
+        .padding(14)
+        .frame(width: 480)
         .glassEffect(.regular, in: .rect(cornerRadius: 18))
-        .padding(8)
-        .onAppear { fieldFocused = true }
+        .padding(.top, 10)
+        .transition(.move(edge: .top).combined(with: .opacity))
     }
-
-    // MARK: - Query field
-
-    private var queryField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
-            TextField("Ask about your reviews…", text: $question)
-                .textFieldStyle(.plain)
-                .font(.body)
-                .focused($fieldFocused)
-                .onSubmit { submit(question) }
-                .disabled(assistant.isThinking)
-            if !assistant.exchanges.isEmpty {
-                Button {
-                    assistant.clear()
-                    fieldFocused = true
-                } label: {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .help("Clear the conversation")
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .glassEffect(.regular, in: .capsule)
-    }
-
-    private func submit(_ text: String) {
-        question = ""
-        Task { await assistant.ask(text) }
-    }
-
-    // MARK: - Suggestions
-
-    private var suggestionRows: some View {
-        VStack(spacing: 4) {
-            ForEach(Self.suggestions, id: \.self) { suggestion in
-                Button {
-                    submit(suggestion)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
-                        Text(suggestion)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .glassEffect(.regular, in: .rect(cornerRadius: 10))
-            }
-        }
-    }
-
-    // MARK: - Thread
 
     private var thread: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(assistant.exchanges) { exchange in
-                        ExchangeView(exchange: exchange) { noteID in
-                            isPresented = false
-                            openNote(id: noteID)
-                        }
-                        .id(exchange.id)
+                        ExchangeView(exchange: exchange, onOpenNote: onOpenNote)
+                            .id(exchange.id)
                     }
                     if assistant.isThinking {
                         HStack(spacing: 8) {
@@ -176,17 +75,8 @@ struct AssistantPopoverView: View {
         }
     }
 
-    /// Selects the cited note via the shell's notification (the popover has
-    /// no direct handle on the selection binding).
-    private func openNote(id: UUID) {
-        NotificationCenter.default.post(name: .revueOpenNote, object: nil, userInfo: ["id": id])
-    }
-
     private var unavailable: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 30, weight: .light))
-                .foregroundStyle(.secondary)
+        VStack(spacing: 8) {
             Text("Apple Intelligence is off")
                 .font(.headline)
             Text("Turn it on in System Settings to ask questions about your reviews.")
@@ -194,15 +84,8 @@ struct AssistantPopoverView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
-        .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 18))
-        .padding(8)
+        .padding(.vertical, 12)
     }
-}
-
-extension Notification.Name {
-    /// Posted with userInfo ["id": UUID] to select a note in the shell.
-    static let revueOpenNote = Notification.Name("revueOpenNote")
 }
 
 private struct ExchangeView: View {
