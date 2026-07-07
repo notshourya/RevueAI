@@ -176,4 +176,78 @@ struct FinalPolisherTests {
         #expect(labels == ["Priya", "You"])
         #expect((note.speakers ?? []).first { $0.label == "You" }?.isPresenter == true)
     }
+
+    @Test func userEditedItemsSurvivePolish() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let edited = ActionItem(oneLiner: "Ship the fix to production", userModified: true, order: 0)
+        edited.note = note
+        context.insert(edited)
+        let untouched = ActionItem(oneLiner: "Old AI item", order: 1)
+        untouched.note = note
+        context.insert(untouched)
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub(actionItems: [
+            .stub("Completely new item"),
+        ]))]
+        let polisher = FinalPolisher(model: model)
+        await polisher.polish(note: note, segments: [seg("hi")], context: context)
+        #expect(note.sortedActionItems.map(\.oneLiner) == [
+            "Ship the fix to production",
+            "Completely new item",
+        ])
+    }
+
+    @Test func aiNearDuplicateOfEditedItemIsDropped() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let edited = ActionItem(oneLiner: "Add retry logic to the upload path", userModified: true, order: 0)
+        edited.note = note
+        context.insert(edited)
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub(actionItems: [
+            .stub("Add retry logic to upload path"),
+            .stub("Add pagination to the list endpoint"),
+        ]))]
+        let polisher = FinalPolisher(model: model)
+        await polisher.polish(note: note, segments: [seg("hi")], context: context)
+        #expect(note.sortedActionItems.map(\.oneLiner) == [
+            "Add retry logic to the upload path",
+            "Add pagination to the list endpoint",
+        ])
+    }
+
+    @Test func userCreatedItemsSurvivePolish() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let manual = ActionItem(oneLiner: "Manually added task", isUserCreated: true, order: 0)
+        manual.note = note
+        context.insert(manual)
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub(actionItems: []))]
+        let polisher = FinalPolisher(model: model)
+        await polisher.polish(note: note, segments: [seg("hi")], context: context)
+        #expect(note.sortedActionItems.map(\.oneLiner) == ["Manually added task"])
+    }
+
+    @Test func preservedItemsKeepOrderBeforePolishedOnes() async throws {
+        let context = try makeInMemoryContext()
+        let note = ReviewNote(title: "T")
+        context.insert(note)
+        let first = ActionItem(oneLiner: "Edited A", userModified: true, order: 3)
+        first.note = note
+        context.insert(first)
+        let second = ActionItem(oneLiner: "Edited B", userModified: true, order: 7)
+        second.note = note
+        context.insert(second)
+        let model = FakeReviewModel()
+        model.polishResults = [.success(.stub(actionItems: [.stub("New from AI")]))]
+        let polisher = FinalPolisher(model: model)
+        await polisher.polish(note: note, segments: [seg("hi")], context: context)
+        #expect(note.sortedActionItems.map(\.oneLiner) == ["Edited A", "Edited B", "New from AI"])
+        #expect(note.sortedActionItems.map(\.order) == [0, 1, 2])
+    }
 }

@@ -98,15 +98,23 @@ final class FinalPolisher {
         note.summary = result.summary
         note.verdict = result.verdict.reviewVerdict
 
-        for existing in note.actionItems ?? [] { context.delete(existing) }
+        // User-touched items are locked: they survive polish verbatim and
+        // near-duplicate AI versions of them are dropped below.
+        let preserved = (note.actionItems ?? [])
+            .filter { $0.userModified || $0.isUserCreated }
+            .sorted { $0.order < $1.order }
+        for existing in note.actionItems ?? [] where !existing.userModified && !existing.isUserCreated {
+            context.delete(existing)
+        }
+        for (index, item) in preserved.enumerated() { item.order = index }
         for existing in note.openQuestions ?? [] { context.delete(existing) }
         for existing in note.decisions ?? [] { context.delete(existing) }
         for existing in note.speakers ?? [] { context.delete(existing) }
 
         // Code-level dedup safety net: skip near-identical one-liners the model
         // may still emit despite the merge instructions.
-        var seen: [String] = []
-        var order = 0
+        var seen: [String] = preserved.map(\.oneLiner)
+        var order = preserved.count
         for item in result.actionItems {
             guard !PointDedup.containsSimilar(item.oneLiner, in: seen) else { continue }
             seen.append(item.oneLiner)

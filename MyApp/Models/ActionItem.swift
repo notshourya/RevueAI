@@ -43,6 +43,14 @@ final class ActionItem {
 
     var isDone: Bool = false
 
+    /// User-curation layer on top of the AI output.
+    var tags: [String] = []
+    /// Set by any user edit (text, priority, category, tags). Locked items
+    /// survive the final polish verbatim.
+    var userModified: Bool = false
+    /// True for items the user added manually (also locked).
+    var isUserCreated: Bool = false
+
     /// Capture order, used for stable sorting (CloudKit to-many is unordered).
     var order: Int = 0
 
@@ -59,6 +67,9 @@ final class ActionItem {
         priority: ActionPriority = .major,
         category: ActionCategory = .other,
         isDone: Bool = false,
+        tags: [String] = [],
+        userModified: Bool = false,
+        isUserCreated: Bool = false,
         order: Int = 0
     ) {
         self.id = id
@@ -70,6 +81,9 @@ final class ActionItem {
         self.priorityRaw = priority.rawValue
         self.categoryRaw = category.rawValue
         self.isDone = isDone
+        self.tags = tags
+        self.userModified = userModified
+        self.isUserCreated = isUserCreated
         self.order = order
     }
 
