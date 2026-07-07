@@ -2,8 +2,8 @@ import Foundation
 import SwiftData
 @testable import RevueAI
 
-/// A fresh in-memory SwiftData context mirroring the app's schema.
-func makeInMemoryContext() throws -> ModelContext {
+/// A fresh in-memory SwiftData container mirroring the app's schema.
+func makeInMemoryContainer() throws -> ModelContainer {
     let schema = Schema([
         ReviewNote.self,
         ActionItem.self,
@@ -14,8 +14,12 @@ func makeInMemoryContext() throws -> ModelContext {
         MeetingSnapshot.self,
     ])
     let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-    let container = try ModelContainer(for: schema, configurations: [configuration])
-    return ModelContext(container)
+    return try ModelContainer(for: schema, configurations: [configuration])
+}
+
+/// A fresh in-memory SwiftData context mirroring the app's schema.
+func makeInMemoryContext() throws -> ModelContext {
+    ModelContext(try makeInMemoryContainer())
 }
 
 extension ExtractedPoints {
