@@ -10,10 +10,10 @@ struct LibraryPane: View {
     @Query(sort: \ReviewNote.date, order: .reverse) private var notes: [ReviewNote]
 
     @Binding var selection: ReviewNote?
-    let showArchived: Bool
-    let showMiniCalendar: Bool
     var calendarModel: CalendarPaneModel
     var onArmChanged: () -> Void = {}
+
+    @State private var showArchived = false
 
     private var shownNotes: [ReviewNote] { notes.filter { $0.isArchived == showArchived } }
 
@@ -40,6 +40,19 @@ struct LibraryPane: View {
             if shownNotes.isEmpty { emptyState }
         }
         .safeAreaInset(edge: .bottom) { bottomDock }
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Toggle(isOn: Binding(
+                    get: { showArchived },
+                    set: { value in withAnimation(.smooth) { showArchived = value } }
+                )) {
+                    Label("Archived", systemImage: "archivebox")
+                }
+                .toggleStyle(.button)
+                .help(showArchived ? "Show active reviews" : "Show archived reviews")
+            }
+        }
+        .onChange(of: showArchived) { selection = shownNotes.first }
         .onChange(of: shownNotes.count) {
             if selection == nil || !shownNotes.contains(where: { $0 == selection }) {
                 selection = shownNotes.first
@@ -65,19 +78,16 @@ struct LibraryPane: View {
         }
     }
 
-    // MARK: - Bottom dock (mini calendar)
+    // MARK: - Bottom dock (mini calendar, always present)
 
-    @ViewBuilder
     private var bottomDock: some View {
-        if showMiniCalendar {
-            VStack(spacing: 0) {
-                Divider()
-                MiniCalendarView(model: calendarModel,
-                                 onOpenNote: { selection = $0 },
-                                 onArmChanged: onArmChanged)
-            }
-            .background(.ultraThinMaterial)
+        VStack(spacing: 0) {
+            Divider()
+            MiniCalendarView(model: calendarModel,
+                             onOpenNote: { selection = $0 },
+                             onArmChanged: onArmChanged)
         }
+        .background(.ultraThinMaterial)
     }
 
     // MARK: - Empty state

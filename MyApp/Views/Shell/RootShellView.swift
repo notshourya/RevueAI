@@ -10,8 +10,6 @@ struct RootShellView: View {
     @Environment(CaptureCoordinator.self) private var coordinator
     @Environment(\.modelContext) private var context
     @State private var selection: ReviewNote?
-    @State private var showArchived = false
-    @AppStorage("showMiniCalendar") private var showMiniCalendar = true
     @State private var calendarModel = CalendarPaneModel(calendar: CalendarService())
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
@@ -23,8 +21,6 @@ struct RootShellView: View {
     var body: some View {
         NavigationSplitView {
             LibraryPane(selection: $selection,
-                        showArchived: showArchived,
-                        showMiniCalendar: showMiniCalendar,
                         calendarModel: calendarModel,
                         onArmChanged: {
                             Task {
@@ -35,23 +31,6 @@ struct RootShellView: View {
                 .navigationSplitViewColumnWidth(min: 270, ideal: 320)
         } detail: {
             readerContent
-        }
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Toggle(isOn: $showMiniCalendar.animation(.smooth)) {
-                    Label("Calendar", systemImage: "calendar")
-                }
-                .toggleStyle(.button)
-                .help(showMiniCalendar ? "Hide the calendar" : "Show the calendar")
-                Toggle(isOn: Binding(
-                    get: { showArchived },
-                    set: { value in withAnimation(.smooth) { showArchived = value } }
-                )) {
-                    Label("Archived", systemImage: "archivebox")
-                }
-                .toggleStyle(.button)
-                .help(showArchived ? "Show active reviews" : "Show archived reviews")
-            }
         }
         .onChange(of: coordinator.state) { _, newValue in
             floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
