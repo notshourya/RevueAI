@@ -22,7 +22,6 @@ struct OnboardingSheet: View {
             }
         }
         .background { PremiumBackground() }
-        .preferredColorScheme(.dark)
         .tint(Theme.accent)
     }
 

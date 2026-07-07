@@ -25,6 +25,5 @@ struct SettingsView: View {
         .background { PremiumBackground() }
         .tint(Theme.accent)
         .frame(width: 380)
-        .preferredColorScheme(.dark)
     }
 }

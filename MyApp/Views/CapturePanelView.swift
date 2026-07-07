@@ -36,7 +36,6 @@ struct CapturePanelView: View {
             RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .strokeBorder(Theme.panelStroke, lineWidth: 1)
         )
-        .preferredColorScheme(.dark)
     }
 
     // MARK: - Idle
