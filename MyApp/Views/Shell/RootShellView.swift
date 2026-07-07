@@ -34,7 +34,7 @@ struct RootShellView: View {
             readerContent
         }
         .toolbar {
-            ToolbarItem(placement: .principal) {
+            ToolbarItem(placement: .status) {
                 AssistantSearchBar(isPresented: $showAssistant, assistant: assistant)
             }
         }

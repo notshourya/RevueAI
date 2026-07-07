@@ -24,6 +24,7 @@ struct AssistantSearchBar: View {
             .padding(.vertical, 5)
             .frame(width: 280)
             .glassEffect(.regular, in: .capsule)
+            .overlay(Capsule().strokeBorder(.secondary.opacity(0.35), lineWidth: 1))
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
