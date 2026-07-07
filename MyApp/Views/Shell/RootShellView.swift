@@ -187,7 +187,13 @@ struct RootShellView: View {
         readerBody
             .background {
                 SearchActivationBridge { active in
-                    if active { withAnimation(.smooth) { showAssistant = true } }
+                    guard active else { return }
+                    // Let the field's remote completion view finish attaching
+                    // before the card animates in (ViewBridge race on focus).
+                    Task {
+                        try? await Task.sleep(for: .milliseconds(180))
+                        withAnimation(.smooth) { showAssistant = true }
+                    }
                 }
             }
     }
@@ -198,24 +204,32 @@ struct RootShellView: View {
     /// toolbar, locates the bridged search item, and centers it. Retries
     /// briefly because SwiftUI populates the toolbar asynchronously.
     private struct ToolbarSearchCenterer: NSViewRepresentable {
+        final class Coordinator {
+            var centered = false
+        }
+
+        func makeCoordinator() -> Coordinator { Coordinator() }
+
         func makeNSView(context: Context) -> NSView {
             let view = NSView()
+            let coordinator = context.coordinator
+            // Apply once, with a few early retries while SwiftUI populates
+            // the toolbar. No re-poking afterwards: repeated toolbar
+            // mutation races the search field's remote completion service
+            // (ViewBridge asserts in SafariPlatformSupport.Helper).
             for delay in [0.1, 0.6, 1.5, 3.0] {
                 DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak view] in
-                    guard let view else { return }
-                    Self.centerSearchItem(in: view.window)
+                    guard let view, !coordinator.centered else { return }
+                    coordinator.centered = Self.centerSearchItem(in: view.window)
                 }
             }
             return view
         }
 
-        func updateNSView(_ nsView: NSView, context: Context) {
-            DispatchQueue.main.async { [weak nsView] in
-                Self.centerSearchItem(in: nsView?.window)
-            }
-        }
+        func updateNSView(_ nsView: NSView, context: Context) {}
 
-        static func centerSearchItem(in window: NSWindow?) {
+        @discardableResult
+        static func centerSearchItem(in window: NSWindow?) -> Bool {
             guard let toolbar = window?.toolbar else { return }
             // Note: do NOT remove the sidebar tracking separators — they are
             // structural, and dropping them scrambles the section layout.
@@ -224,9 +238,11 @@ struct RootShellView: View {
             let searchItem = toolbar.items.first {
                 $0 is NSSearchToolbarItem || $0.view?.firstSubview(of: NSSearchField.self) != nil
             }
-            guard let identifier = searchItem?.itemIdentifier,
-                  toolbar.centeredItemIdentifiers != [identifier] else { return }
-            toolbar.centeredItemIdentifiers = [identifier]
+            guard let identifier = searchItem?.itemIdentifier else { return false }
+            if toolbar.centeredItemIdentifiers != [identifier] {
+                toolbar.centeredItemIdentifiers = [identifier]
+            }
+            return true
         }
     }
 
