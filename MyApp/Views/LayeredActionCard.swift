@@ -8,7 +8,7 @@ struct ActionRow: View {
     var isSelected = false
     var onToggleSelect: () -> Void = {}
 
-    @Environment(\.openWindow) private var openWindow
+    @State private var showDetail = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -38,13 +38,16 @@ struct ActionRow: View {
         }
         .padding(10)
         .contentShape(Rectangle())
-        .onTapGesture { openWindow(value: ItemPopupRef.actionItem(item.id)) }
+        .onTapGesture { showDetail = true }
+        .popover(isPresented: $showDetail, arrowEdge: .trailing) {
+            ActionItemDetail(item: item)
+        }
         .glassEffect(isSelected ? .regular.tint(Theme.accent.opacity(0.3)) : .regular, in: .rect(cornerRadius: 11))
         .overlay(
             RoundedRectangle(cornerRadius: 11, style: .continuous)
                 .strokeBorder(isSelected ? Theme.accent : .clear, lineWidth: 1.5)
         )
         .opacity(item.isDone ? 0.75 : 1)
-        .help("Open details in a window")
+        .help("Show details")
     }
 }

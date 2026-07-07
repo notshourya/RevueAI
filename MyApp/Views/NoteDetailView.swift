@@ -7,7 +7,6 @@ import AppKit
 struct NoteDetailView: View {
     @Bindable var note: ReviewNote
     @State private var didCopy = false
-    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         ScrollView {
@@ -125,19 +124,32 @@ struct NoteDetailView: View {
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(.secondary)
                 ForEach(decisions) { decision in
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("•")
-                        Text(decision.statement)
-                    }
-                    .font(Theme.rounded(13))
-                    .foregroundStyle(.primary.opacity(0.9))
-                    .contentShape(Rectangle())
-                    .onTapGesture { openWindow(value: ItemPopupRef.decision(decision.id)) }
+                    DecisionRow(decision: decision)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        }
+    }
+}
+
+/// One decision line; click shows its detail in an anchored popover.
+private struct DecisionRow: View {
+    let decision: Decision
+    @State private var showDetail = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text("•")
+            Text(decision.statement)
+        }
+        .font(Theme.rounded(13))
+        .foregroundStyle(.primary.opacity(0.9))
+        .contentShape(Rectangle())
+        .onTapGesture { showDetail = true }
+        .popover(isPresented: $showDetail, arrowEdge: .trailing) {
+            DecisionDetail(decision: decision)
         }
     }
 }

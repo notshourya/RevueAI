@@ -181,7 +181,7 @@ private struct DropIfNeeded: ViewModifier {
 
 private struct QuestionRow: View {
     @Bindable var question: OpenQuestion
-    @Environment(\.openWindow) private var openWindow
+    @State private var showDetail = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -209,7 +209,10 @@ private struct QuestionRow: View {
             Spacer(minLength: 0)
         }
         .contentShape(Rectangle())
-        .onTapGesture { openWindow(value: ItemPopupRef.question(question.id)) }
+        .onTapGesture { showDetail = true }
+        .popover(isPresented: $showDetail, arrowEdge: .trailing) {
+            QuestionDetail(question: question)
+        }
         .padding(10)
         .glassEffect(.regular, in: .rect(cornerRadius: 11))
         .opacity(question.isResolved ? 0.75 : 1)

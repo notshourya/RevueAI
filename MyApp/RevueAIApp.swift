@@ -40,15 +40,6 @@ struct RevueAIApp: App {
         .modelContainer(container)
         .defaultSize(width: 1240, height: 720)
 
-        WindowGroup(id: "itemPopup", for: ItemPopupRef.self) { $ref in
-            ItemPopupWindowView(ref: ref)
-                .environment(coordinator)
-        }
-        .modelContainer(container)
-        .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 440, height: 480)
-        .windowResizability(.contentMinSize)
-
         MenuBarExtra {
             CapturePanelView()
                 .environment(coordinator)
