@@ -8,6 +8,8 @@ struct RootShellView: View {
     @Environment(CaptureCoordinator.self) private var coordinator
     @State private var layout = PanelLayoutModel()
     @State private var selection: ReviewNote?
+    @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
+    @State private var floatingOrb = FloatingOrbController()
 
     var body: some View {
         ZStack {
@@ -40,6 +42,10 @@ struct RootShellView: View {
             if newValue == .listening {
                 withAnimation(.smooth) { layout.expandLive() }
             }
+            floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
+        }
+        .onChange(of: floatingOrbEnabled) { _, enabled in
+            floatingOrb.update(state: coordinator.state, enabled: enabled, coordinator: coordinator)
         }
     }
 
