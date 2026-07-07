@@ -111,7 +111,11 @@ struct NoteDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .glassEffect(.regular, in: .rect(cornerRadius: 14))
+            .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(Theme.panelStroke, lineWidth: 1)
+            )
         }
     }
 
@@ -129,7 +133,11 @@ struct NoteDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
-            .glassEffect(.regular, in: .rect(cornerRadius: 14))
+            .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(Theme.panelStroke, lineWidth: 1)
+            )
         }
     }
 }

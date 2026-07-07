@@ -114,7 +114,7 @@ private struct MiniDayCell: View {
                 Text("\(Calendar.current.component(.day, from: day))")
                     .font(.system(size: 10, weight: isToday ? .bold : .regular))
                     .frame(width: 18, height: 16)
-                    .background(Circle().fill(isToday ? Color.red.opacity(0.85) : .clear))
+                    .background(Circle().fill(isToday ? Theme.danger.opacity(0.85) : .clear))
                     .foregroundStyle(isToday ? .white : .primary)
                 Circle()
                     .fill(hasNotes ? Theme.accent : .clear)

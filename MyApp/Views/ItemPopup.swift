@@ -40,7 +40,7 @@ struct ActionItemDetail: View {
                             .font(Theme.rounded(12, .semibold))
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(item.isDone ? Color(red: 0.35, green: 0.85, blue: 0.55) : .secondary)
+                    .foregroundStyle(item.isDone ? Theme.success : .secondary)
                 }
 
                 TextField("What needs to happen", text: $item.oneLiner, axis: .vertical)
@@ -134,7 +134,8 @@ struct ActionItemDetail: View {
                     }
                     .font(Theme.rounded(11, .medium))
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Theme.accent.opacity(0.18), in: Capsule())
+                    .background(Theme.accent.opacity(0.14), in: Capsule())
+                    .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.24), lineWidth: 1))
                     .foregroundStyle(Theme.accent)
                 }
                 TextField("Add tag", text: $newTag)
@@ -212,7 +213,7 @@ struct QuestionDetail: View {
                     .font(Theme.rounded(12, .semibold))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(question.isResolved ? Color(red: 0.35, green: 0.85, blue: 0.55) : .secondary)
+            .foregroundStyle(question.isResolved ? Theme.success : .secondary)
 
             Text(question.text)
                 .font(Theme.display(16, .semibold))

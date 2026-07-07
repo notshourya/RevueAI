@@ -30,7 +30,12 @@ struct CapturePanelView: View {
         }
         .padding(22)
         .frame(width: 300)
-        .glassEffect(.regular, in: .rect(cornerRadius: 26))
+        .background { PremiumBackground().opacity(0.9) }
+        .glassEffect(.regular.tint(Theme.panel.opacity(0.32)), in: .rect(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.panelStroke, lineWidth: 1)
+        )
         .preferredColorScheme(.dark)
     }
 
@@ -55,7 +60,7 @@ struct CapturePanelView: View {
         }
         .toggleStyle(.switch)
         .controlSize(.small)
-        .tint(.accentColor)
+        .tint(Theme.accent)
     }
 
     // MARK: - Capture (listening / paused)
@@ -99,10 +104,10 @@ struct CapturePanelView: View {
                 RoundControl(icon: "pause.fill", action: pauseAction)
                     .help("Pause")
             } else {
-                RoundControl(icon: "play.fill", tint: Color(red: 0.4, green: 0.85, blue: 0.55), action: resumeAction)
+                RoundControl(icon: "play.fill", tint: Theme.success, action: resumeAction)
                     .help("Resume")
             }
-            RoundControl(icon: "stop.fill", tint: Color(red: 1, green: 0.4, blue: 0.43), filled: true, action: stopAction)
+            RoundControl(icon: "stop.fill", tint: Theme.danger, filled: true, action: stopAction)
                 .help("Stop & summarize")
         }
     }
@@ -163,7 +168,11 @@ struct CapturePanelView: View {
             }
         }
         .padding(12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(Theme.panelStroke, lineWidth: 1)
+        )
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
@@ -204,10 +213,14 @@ struct CapturePanelView: View {
                     .font(.system(size: 13, weight: .medium, design: .rounded))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.tint)
+            .foregroundStyle(Theme.accent)
         }
         .padding(16)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(Theme.panelStroke, lineWidth: 1)
+        )
     }
 
     // MARK: - Helpers
@@ -219,7 +232,11 @@ struct CapturePanelView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
-        .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(tint.opacity(0.24), lineWidth: 1)
+        )
     }
 
     private func startAction() { Task { await coordinator.start(context: context) } }
@@ -253,9 +270,12 @@ private struct RoundControlBackground: ViewModifier {
     func body(content: Content) -> some View {
         if filled {
             content.background(Circle().fill(tint.gradient))
+                .overlay(Circle().strokeBorder(.white.opacity(0.20), lineWidth: 1))
         } else {
-            content.glassEffect(.regular, in: Circle())
+            content
+                .foregroundStyle(tint)
+                .glassEffect(.regular.tint(tint.opacity(0.12)), in: Circle())
+                .overlay(Circle().strokeBorder(tint.opacity(0.22), lineWidth: 1))
         }
     }
 }
-

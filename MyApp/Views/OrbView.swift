@@ -23,9 +23,9 @@ enum OrbState: Equatable {
     }
 }
 
-/// The brand orb, rendered per state: shader glow while the AI is live,
-/// static gradient when idle, dimmed when paused, grey on error. Respects
-/// Reduce Motion by dropping the animated shader for a static gradient.
+/// Legacy capture identity wrapper. Visually this is now a reactive
+/// glass-nanoparticle field, with the existing name preserved for call sites
+/// and tests.
 struct OrbView: View {
     let state: OrbState
     var size: CGFloat = 120
@@ -36,15 +36,15 @@ struct OrbView: View {
         ZStack {
             switch state {
             case .idle:
-                staticOrb(colors: [Theme.accent.opacity(0.9), Theme.accent.opacity(0.5)])
+                animatedOrDefault(mode: .idle)
             case .listening:
                 animatedOrDefault(mode: .listening)
             case .extracting:
-                animatedOrDefault(mode: .listening)
+                animatedOrDefault(mode: .extracting)
                     .overlay(
                         Circle()
-                            .strokeBorder(.white.opacity(0.7), lineWidth: 2)
-                            .blur(radius: 2)
+                            .strokeBorder(Theme.warm.opacity(0.72), lineWidth: 2)
+                            .blur(radius: 1.5)
                             .frame(width: size * 0.9, height: size * 0.9)
                     )
             case .paused:
@@ -57,11 +57,18 @@ struct OrbView: View {
             case .processing:
                 animatedOrDefault(mode: .processing)
             case .error:
-                staticOrb(colors: [Color(white: 0.45), Color(white: 0.25)])
+                animatedOrDefault(mode: .danger)
                 Image(systemName: "exclamationmark")
                     .font(.system(size: size * 0.2, weight: .bold))
                     .foregroundStyle(.white.opacity(0.8))
             }
+        }
+        .background {
+            RoundedRectangle(cornerRadius: size * 0.20, style: .continuous)
+                .fill(.white.opacity(0.015))
+                .glassEffect(.regular.tint(stateColor.opacity(0.08)),
+                             in: .rect(cornerRadius: size * 0.20))
+                .frame(width: size * 0.88, height: size * 0.88)
         }
         .frame(width: size, height: size)
         .accessibilityLabel(accessibilityText)
@@ -70,37 +77,81 @@ struct OrbView: View {
     @ViewBuilder
     private func animatedOrDefault(mode: StateOrb.Mode) -> some View {
         if reduceMotion {
-            staticOrb(colors: mode == .processing
-                      ? [Color(red: 0.36, green: 0.52, blue: 1.0), Theme.accent.opacity(0.6)]
-                      : [Theme.accent, Color(red: 0.92, green: 0.42, blue: 0.78).opacity(0.7)])
+            staticParticleField(mode: mode)
         } else {
             StateOrb(mode: mode, size: size)
         }
     }
 
-    private func staticOrb(colors: [Color]) -> some View {
-        Circle()
-            .fill(
-                RadialGradient(colors: colors,
-                               center: UnitPoint(x: 0.36, y: 0.30),
-                               startRadius: 1,
-                               endRadius: size * 0.62)
-            )
-            .overlay(
-                Circle().strokeBorder(
-                    LinearGradient(colors: [.white.opacity(0.55), .white.opacity(0.04)],
-                                   startPoint: .top, endPoint: .bottom),
-                    lineWidth: 1.5
-                )
-            )
-            .overlay(alignment: .topLeading) {
-                Circle()
-                    .fill(.white.opacity(0.3))
-                    .blur(radius: size * 0.07)
-                    .frame(width: size * 0.34, height: size * 0.34)
-                    .offset(x: size * 0.12, y: size * 0.1)
+    private func staticParticleField(mode: StateOrb.Mode) -> some View {
+        ZStack {
+            ForEach(0..<12, id: \.self) { index in
+                let start = particlePoint(index, mode: mode)
+                let end = particlePoint(index + 7, mode: mode)
+                Capsule()
+                    .fill(particleColor(mode).opacity(0.16))
+                    .frame(width: hypot(end.x - start.x, end.y - start.y), height: 1)
+                    .rotationEffect(.radians(atan2(end.y - start.y, end.x - start.x)))
+                    .position(x: (start.x + end.x) / 2, y: (start.y + end.y) / 2)
             }
-            .frame(width: size * 0.86, height: size * 0.86)
+
+            ForEach(0..<24, id: \.self) { index in
+                let point = particlePoint(index, mode: mode)
+                Circle()
+                    .fill(
+                        RadialGradient(colors: [.white.opacity(0.94),
+                                                particleColor(mode).opacity(0.86),
+                                                particleColor(mode).opacity(0.12)],
+                                       center: UnitPoint(x: 0.32, y: 0.28),
+                                       startRadius: 1,
+                                       endRadius: point.diameter)
+                    )
+                    .frame(width: point.diameter, height: point.diameter)
+                    .shadow(color: particleColor(mode).opacity(0.42), radius: point.diameter * 0.9)
+                    .position(x: point.x, y: point.y)
+            }
+        }
+        .frame(width: size, height: size)
+    }
+
+    private func particlePoint(_ index: Int, mode: StateOrb.Mode) -> (x: CGFloat, y: CGFloat, diameter: CGFloat) {
+        let a = CGFloat((index * 37) % 100) / 100
+        let b = CGFloat((index * 61 + 17) % 100) / 100
+        let c = CGFloat((index * 29 + 43) % 100) / 100
+        let expansion: CGFloat = switch mode {
+        case .idle: 0.78
+        case .listening: 0.90
+        case .extracting: 0.98
+        case .processing: 0.84
+        case .danger: 0.88
+        }
+        let angle = a * .pi * 2
+        let radius = b.squareRoot() * size * 0.36 * expansion
+        let jitter = CGFloat(index % 3 - 1) * size * 0.012
+        return (
+            x: size / 2 + cos(angle) * radius + jitter,
+            y: size / 2 + sin(angle) * radius - jitter,
+            diameter: size * (0.035 + c * 0.030)
+        )
+    }
+
+    private var stateColor: Color {
+        switch state {
+        case .idle, .listening: return Theme.accent
+        case .extracting: return Theme.warm
+        case .paused: return Theme.steel
+        case .processing: return Theme.steel
+        case .error: return Theme.danger
+        }
+    }
+
+    private func particleColor(_ mode: StateOrb.Mode) -> Color {
+        switch mode {
+        case .idle, .listening: return Theme.accent
+        case .extracting: return Theme.warm
+        case .processing: return Theme.steel
+        case .danger: return Theme.danger
+        }
     }
 
     private var accessibilityText: String {

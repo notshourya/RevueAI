@@ -67,26 +67,29 @@ struct LivePanelView: View {
     private var transport: some View {
         HStack(spacing: 16) {
             if coordinator.state == .listening {
-                transportButton("pause.fill", help: "Pause") { await coordinator.pause() }
+                transportButton("pause.fill", help: "Pause", tint: Theme.accent) { await coordinator.pause() }
             } else if coordinator.state == .paused {
-                transportButton("play.fill", help: "Resume") { await coordinator.resume() }
+                transportButton("play.fill", help: "Resume", tint: Theme.success) { await coordinator.resume() }
             }
             if coordinator.isActive {
-                transportButton("stop.fill", help: "Stop & summarize") { await coordinator.stop() }
+                transportButton("stop.fill", help: "Stop & summarize", tint: Theme.danger, filled: true) { await coordinator.stop() }
             }
         }
     }
 
-    private func transportButton(_ icon: String, help: String, action: @escaping () async -> Void) -> some View {
+    private func transportButton(_ icon: String, help: String, tint: Color, filled: Bool = false, action: @escaping () async -> Void) -> some View {
         Button {
             Task { await action() }
         } label: {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .semibold))
                 .frame(width: 44, height: 44)
+                .foregroundStyle(filled ? .white : tint)
+                .background(filled ? AnyShapeStyle(tint.gradient) : AnyShapeStyle(.clear), in: Circle())
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular, in: Circle())
+        .glassEffect(.regular.tint(tint.opacity(filled ? 0.06 : 0.12)), in: Circle())
+        .overlay(Circle().strokeBorder(tint.opacity(filled ? 0.30 : 0.22), lineWidth: 1))
         .help(help)
     }
 
@@ -108,7 +111,11 @@ struct LivePanelView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(Theme.panelStroke, lineWidth: 1)
+        )
     }
 
     // MARK: - Transcript ticker
@@ -128,7 +135,11 @@ struct LivePanelView: View {
                 .padding(10)
             }
             .frame(height: 96)
-            .glassEffect(.regular, in: .rect(cornerRadius: 14))
+            .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(Theme.panelStroke, lineWidth: 1)
+            )
             .onChange(of: coordinator.recentTranscript.count) {
                 withAnimation { proxy.scrollTo(coordinator.recentTranscript.count - 1, anchor: .bottom) }
             }

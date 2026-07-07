@@ -16,7 +16,7 @@ struct ActionRow: View {
             Button(action: onToggleSelect) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 13))
-                    .foregroundStyle(isSelected ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.tertiary))
+                    .foregroundStyle(isSelected ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.tertiary))
             }
             .buttonStyle(.plain)
 
@@ -34,7 +34,7 @@ struct ActionRow: View {
 
             if item.userModified || item.isUserCreated {
                 Circle()
-                    .fill(Theme.accent.opacity(0.9))
+                    .fill(Theme.warm.opacity(0.9))
                     .frame(width: 5, height: 5)
                     .padding(.top, 5)
                     .help("Edited by you — polish won't overwrite it")
@@ -52,9 +52,9 @@ struct ActionRow: View {
             ActionItemDetail(item: item)
         }
         .onAppear { if showDetailOnAppear { showDetail = true } }
-        .glassEffect(isSelected ? .regular.tint(Theme.accent.opacity(0.3)) : .regular, in: .rect(cornerRadius: 11))
+        .glassEffect(isSelected ? .regular.tint(Theme.accent.opacity(0.20)) : .regular.tint(Theme.panel.opacity(0.18)), in: .rect(cornerRadius: Theme.cardRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: 11, style: .continuous)
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
                 .strokeBorder(isSelected ? Theme.accent : .clear, lineWidth: 1.5)
         )
         .opacity(item.isDone ? 0.75 : 1)

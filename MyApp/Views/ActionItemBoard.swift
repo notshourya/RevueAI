@@ -59,7 +59,8 @@ struct ReviewBoard: View {
         .buttonStyle(.plain)
         .font(.system(size: 11, weight: .medium, design: .rounded))
         .padding(.horizontal, 12).padding(.vertical, 7)
-        .glassEffect(.regular, in: .capsule)
+        .glassEffect(.regular.tint(Theme.accent.opacity(0.10)), in: .capsule)
+        .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.22), lineWidth: 1))
         .transition(.opacity)
     }
 
@@ -67,7 +68,7 @@ struct ReviewBoard: View {
 
     private func actionColumn(_ title: String, systemImage: String, items: [ActionItem], markCompleted: Bool, emptyText: String, showsAddRow: Bool = false) -> some View {
         BoardColumn(title: title, systemImage: systemImage, count: items.count,
-                    accent: markCompleted ? Color(red: 0.35, green: 0.85, blue: 0.55) : .secondary,
+                    accent: markCompleted ? Theme.success : .secondary,
                     isEmpty: items.isEmpty, emptyText: emptyText,
                     dropAction: { ids in apply(ids, done: markCompleted) },
                     footer: showsAddRow ? AnyView(addItemRow) : nil) {
@@ -190,12 +191,12 @@ private struct BoardColumn<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.white.opacity(isTargeted ? 0.08 : 0.03))
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .fill(Theme.panel.opacity(isTargeted ? 0.52 : 0.30))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(isTargeted ? Color.accentColor : .white.opacity(0.05),
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(isTargeted ? Theme.accent : Theme.panelStroke,
                               style: StrokeStyle(lineWidth: isTargeted ? 1.5 : 1, dash: isTargeted ? [5] : []))
         )
         .animation(.smooth(duration: 0.2), value: isTargeted)
@@ -233,7 +234,7 @@ private struct QuestionRow: View {
             } label: {
                 Image(systemName: question.isResolved ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 13))
-                    .foregroundStyle(question.isResolved ? AnyShapeStyle(Color(red: 0.35, green: 0.85, blue: 0.55)) : AnyShapeStyle(.tertiary))
+                    .foregroundStyle(question.isResolved ? AnyShapeStyle(Theme.success) : AnyShapeStyle(.tertiary))
             }
             .buttonStyle(.plain)
 
@@ -257,7 +258,11 @@ private struct QuestionRow: View {
             QuestionDetail(question: question)
         }
         .padding(10)
-        .glassEffect(.regular, in: .rect(cornerRadius: 11))
+        .glassEffect(.regular.tint(Theme.panel.opacity(0.20)), in: .rect(cornerRadius: Theme.cardRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(Theme.panelStroke, lineWidth: 1)
+        )
         .opacity(question.isResolved ? 0.75 : 1)
     }
 }

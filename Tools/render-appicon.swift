@@ -1,7 +1,7 @@
 #!/usr/bin/swift
-// Renders the RevueAI orb app icon: a glassy orb with a chromatic rim on
-// near-black, at every size macOS needs. Compile with swiftc (script mode is
-// unreliable on beta toolchains):
+// Renders the RevueAI orb app icon: a liquid-metal orb on graphite, at every
+// size macOS needs. Compile with swiftc (script mode is unreliable on beta
+// toolchains):
 //   xcrun swiftc Tools/render-appicon.swift -o /tmp/render-appicon
 //   /tmp/render-appicon MyApp/Assets.xcassets/AppIcon.appiconset
 import AppKit
@@ -21,40 +21,55 @@ func renderIcon(pixels: Int) -> NSBitmapImageRep {
     let corner = size * 0.22
     let path = CGPath(roundedRect: bgRect, cornerWidth: corner, cornerHeight: corner, transform: nil)
     context.addPath(path)
-    context.setFillColor(CGColor(red: 0.05, green: 0.05, blue: 0.07, alpha: 1))
+    context.setFillColor(CGColor(red: 0.02, green: 0.024, blue: 0.025, alpha: 1))
     context.fillPath()
+
+    let field = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                           colors: [CGColor(red: 0.02, green: 0.024, blue: 0.025, alpha: 1),
+                                    CGColor(red: 0.075, green: 0.085, blue: 0.082, alpha: 1)] as CFArray,
+                           locations: [0, 1])!
+    context.saveGState()
+    context.addPath(path)
+    context.clip()
+    context.drawLinearGradient(field,
+                               start: CGPoint(x: 0, y: 0),
+                               end: CGPoint(x: size, y: size),
+                               options: [])
+    context.restoreGState()
 
     // Orb body.
     let orbDiameter = size * 0.56
     let orbRect = CGRect(x: (size - orbDiameter) / 2, y: (size - orbDiameter) / 2,
                          width: orbDiameter, height: orbDiameter)
     let colors = [
-        CGColor(red: 0.30, green: 0.28, blue: 0.36, alpha: 1),
-        CGColor(red: 0.10, green: 0.09, blue: 0.13, alpha: 1),
+        CGColor(gray: 1, alpha: 0.92),
+        CGColor(red: 0.18, green: 0.86, blue: 0.80, alpha: 0.92),
+        CGColor(red: 0.34, green: 0.44, blue: 0.45, alpha: 1),
+        CGColor(red: 0.025, green: 0.03, blue: 0.03, alpha: 1),
     ] as CFArray
     let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                              colors: colors, locations: [0, 1])!
+                              colors: colors, locations: [0, 0.28, 0.62, 1])!
     context.saveGState()
     context.addEllipse(in: orbRect)
     context.clip()
     context.drawRadialGradient(
         gradient,
         startCenter: CGPoint(x: orbRect.midX - orbDiameter * 0.14, y: orbRect.midY + orbDiameter * 0.2),
-        startRadius: 1,
+        startRadius: max(1, orbDiameter * 0.018),
         endCenter: CGPoint(x: orbRect.midX, y: orbRect.midY),
         endRadius: orbDiameter * 0.62,
-        options: .drawsAfterEndLocation
+        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation]
     )
 
-    // Chromatic horizon band across the middle (the aurora sliver).
+    // Heated horizon band across the middle.
     let bandColors = [
-        CGColor(red: 1.0, green: 0.85, blue: 0.6, alpha: 0.0),
-        CGColor(red: 1.0, green: 0.9, blue: 0.75, alpha: 0.9),
-        CGColor(red: 0.5, green: 0.7, blue: 1.0, alpha: 0.6),
-        CGColor(red: 0.9, green: 0.5, blue: 0.8, alpha: 0.0),
+        CGColor(red: 0.18, green: 0.86, blue: 0.80, alpha: 0.0),
+        CGColor(red: 0.18, green: 0.86, blue: 0.80, alpha: 0.78),
+        CGColor(red: 1.0, green: 0.64, blue: 0.28, alpha: 0.92),
+        CGColor(red: 0.18, green: 0.86, blue: 0.80, alpha: 0.0),
     ] as CFArray
     let band = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                          colors: bandColors, locations: [0.0, 0.45, 0.6, 1.0])!
+                          colors: bandColors, locations: [0.0, 0.32, 0.62, 1.0])!
     let bandRect = CGRect(x: orbRect.minX, y: orbRect.midY - orbDiameter * 0.06,
                           width: orbDiameter, height: orbDiameter * 0.12)
     context.saveGState()
@@ -70,8 +85,9 @@ func renderIcon(pixels: Int) -> NSBitmapImageRep {
                                colors: [CGColor(gray: 1, alpha: 0.5), CGColor(gray: 1, alpha: 0)] as CFArray,
                                locations: [0, 1])!
     let highlightCenter = CGPoint(x: orbRect.midX - orbDiameter * 0.12, y: orbRect.maxY - orbDiameter * 0.22)
-    context.drawRadialGradient(highlight, startCenter: highlightCenter, startRadius: 1,
-                               endCenter: highlightCenter, endRadius: orbDiameter * 0.35, options: [])
+    context.drawRadialGradient(highlight, startCenter: highlightCenter, startRadius: max(1, orbDiameter * 0.018),
+                               endCenter: highlightCenter, endRadius: orbDiameter * 0.35,
+                               options: .drawsBeforeStartLocation)
     context.restoreGState()
 
     // Thin rim.

@@ -21,6 +21,9 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background { PremiumBackground() }
+        .tint(Theme.accent)
         .frame(width: 380)
         .preferredColorScheme(.dark)
     }

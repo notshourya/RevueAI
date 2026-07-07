@@ -21,7 +21,7 @@ struct OnboardingSheet: View {
             case .permissions: permissionsPhase
             }
         }
-        .background(Color(white: 0.07))
+        .background { PremiumBackground() }
         .preferredColorScheme(.dark)
         .tint(Theme.accent)
     }
@@ -113,14 +113,18 @@ struct OnboardingSheet: View {
             Spacer()
             if done {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Color(red: 0.35, green: 0.85, blue: 0.55))
+                    .foregroundStyle(Theme.success)
             } else {
                 Button("Enable", action: action)
                     .buttonStyle(.bordered)
             }
         }
         .padding(12)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                .strokeBorder(Theme.panelStroke, lineWidth: 1)
+        )
     }
 
     private func finish() {

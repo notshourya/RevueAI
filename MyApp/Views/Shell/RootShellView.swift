@@ -124,6 +124,7 @@ struct RootShellView: View {
                     startFromPlanned(consumed ?? planned)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(Theme.accent)
                 Button {
                     CapturePlanner.consumeMatch(eventID: planned.eventID,
                                                 occurrence: planned.occurrenceDate, in: context)
@@ -135,7 +136,11 @@ struct RootShellView: View {
                 .foregroundStyle(.secondary)
             }
             .padding(12)
-            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .glassEffect(.regular.tint(Theme.panel.opacity(0.28)), in: .rect(cornerRadius: Theme.cardRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
+                    .strokeBorder(Theme.panelStroke, lineWidth: 1)
+            )
             .padding(.bottom, 16)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
@@ -158,9 +163,7 @@ struct RootShellView: View {
             ZStack {
                 PremiumBackground()
                 VStack(spacing: 14) {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.system(size: 44, weight: .light))
-                        .foregroundStyle(.tertiary)
+                    OrbView(state: .idle, size: 58)
                     Text("Select a review")
                         .font(Theme.display(20))
                         .foregroundStyle(.secondary)
