@@ -6,10 +6,6 @@
 	objectVersion = 90;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		AA0000000000000000000003 /* TourKit in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000002 /* TourKit */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		4D7E57000000000000000131 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -43,7 +39,6 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				AA0000000000000000000003 /* TourKit in Frameworks */,
 			);
 		};
 		4D7E57000000000000000122 /* Frameworks */ = {
@@ -90,9 +85,6 @@
 				000000000000000000000010 /* MyApp */,
 			);
 			name = RevueAI;
-			packageProductDependencies = (
-				AA0000000000000000000002 /* TourKit */,
-			);
 			productName = MyApp;
 			productReference = 000000000000000000000120 /* RevueAI.app */;
 			productType = "com.apple.product-type.application";
@@ -147,7 +139,6 @@
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				AA0000000000000000000001 /* XCRemoteSwiftPackageReference "TourKit" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -501,25 +492,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		AA0000000000000000000001 /* XCRemoteSwiftPackageReference "TourKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/rampatra/TourKit";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		AA0000000000000000000002 /* TourKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = AA0000000000000000000001 /* XCRemoteSwiftPackageReference "TourKit" */;
-			productName = TourKit;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 000000000000000000000000 /* Project object */;
 }
