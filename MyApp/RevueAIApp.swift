@@ -14,6 +14,7 @@ struct RevueAIApp: App {
                 .environment(coordinator)
                 .frame(minWidth: 980, minHeight: 560)
                 .tint(Theme.accent)
+                .fontDesign(.monospaced)
         }
         .modelContainer(SharedModel.container)
         .defaultSize(width: 1240, height: 720)
@@ -23,6 +24,7 @@ struct RevueAIApp: App {
                 .environment(coordinator)
                 .modelContainer(SharedModel.container)
                 .tint(Theme.accent)
+                .fontDesign(.monospaced)
         } label: {
             Image(systemName: coordinator.state == .listening ? "waveform.circle.fill" : "waveform.circle")
         }
@@ -31,6 +33,7 @@ struct RevueAIApp: App {
         Settings {
             SettingsView()
                 .tint(Theme.accent)
+                .fontDesign(.monospaced)
         }
     }
 }

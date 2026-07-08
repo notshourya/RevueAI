@@ -21,12 +21,12 @@ struct DateRulerView: View {
     private static let pastDays = 365
     private static let futureDays = 90
     private static var todayIndex: Int { pastDays }
-    private static let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
+    private static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
 
     /// Deliberately darker and squarer than the review cards — the ruler is
     /// an instrument, not a card.
     private var glassTint: Color {
-        colorScheme == .dark ? .black.opacity(0.58) : .black.opacity(0.16)
+        colorScheme == .dark ? .black.opacity(0.35) : .black.opacity(0.16)
     }
 
     private var selectedDay: Date {
@@ -44,7 +44,7 @@ struct DateRulerView: View {
             ruler
         }
         .padding(.horizontal, 14)
-        .padding(.top, 12)
+        .padding(.top, 22)
         .padding(.bottom, 10)
         .glassEffect(.clear.tint(glassTint), in: Self.shape)
         .onAppear { CapturePlanner.prune(now: .now, in: context) }
@@ -67,8 +67,9 @@ struct DateRulerView: View {
             Button {
                 withAnimation(.smooth) { selectedIndex = Self.todayIndex }
             } label: {
-                Image(systemName: "arrow.uturn.backward.circle")
-                    .font(.system(size: 13, weight: .semibold))
+                Image(systemName: "arrow.uturn.backward.circle.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
@@ -104,8 +105,8 @@ struct DateRulerView: View {
 
             Spacer()
 
-            Image(systemName: "arrow.uturn.backward.circle")
-                .font(.system(size: 13, weight: .semibold))
+            Image(systemName: "arrow.uturn.backward.circle.fill")
+                .font(.system(size: 20, weight: .semibold))
                 .opacity(0)
         }
     }
@@ -132,10 +133,10 @@ struct DateRulerView: View {
             // Fixed center pointer under the readout.
             VStack(spacing: 0) {
                 Triangle()
-                    .fill(Color.red)
+                    .fill(Color.primary.opacity(0.85))
                     .frame(width: 9, height: 5)
                 Rectangle()
-                    .fill(Color.red)
+                    .fill(Color.primary.opacity(0.85))
                     .frame(width: 2, height: 34)
                 Spacer(minLength: 0)
             }

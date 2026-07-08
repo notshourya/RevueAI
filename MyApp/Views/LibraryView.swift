@@ -126,17 +126,21 @@ struct LibraryPane: View {
             .background {
                 // Progressive blur like the toolbar edge: cards fade out
                 // under the ruler instead of bleeding through its glass.
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .mask(
-                        LinearGradient(stops: [.init(color: .clear, location: 0),
-                                               .init(color: .black, location: 0.45),
-                                               .init(color: .black, location: 1)],
-                                       startPoint: .top, endPoint: .bottom)
-                    )
-                    .padding(.top, -28)
-                    .ignoresSafeArea(edges: .bottom)
-                    .allowsHitTesting(false)
+                // The scrim uses the window background color so it deepens
+                // in dark mode and lightens in light mode (no grey cast).
+                ZStack {
+                    Rectangle().fill(.ultraThinMaterial)
+                    Rectangle().fill(Theme.ink.opacity(0.72))
+                }
+                .mask(
+                    LinearGradient(stops: [.init(color: .clear, location: 0),
+                                           .init(color: .black, location: 0.45),
+                                           .init(color: .black, location: 1)],
+                                   startPoint: .top, endPoint: .bottom)
+                )
+                .padding(.top, -28)
+                .ignoresSafeArea(edges: .bottom)
+                .allowsHitTesting(false)
             }
     }
 

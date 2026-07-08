@@ -54,7 +54,7 @@ struct CapturePanelView: View {
         @Bindable var coordinator = coordinator
         return Toggle(isOn: $coordinator.captureSystemAudio) {
             Label("Capture participants", systemImage: "person.2.wave.2.fill")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .foregroundStyle(.secondary)
         }
         .toggleStyle(.switch)
@@ -79,7 +79,7 @@ struct CapturePanelView: View {
 
             VStack(spacing: 4) {
                 Text(coordinator.elapsedText)
-                    .font(.system(size: 46, weight: .bold, design: .rounded).monospacedDigit())
+                    .font(.system(size: 46, weight: .bold, design: .monospaced).monospacedDigit())
                     .contentTransition(.numericText())
                 HStack(spacing: 6) {
                     Text("\(coordinator.capturedPhraseCount) phrases")
@@ -87,7 +87,7 @@ struct CapturePanelView: View {
                         Text("· you + participants")
                     }
                 }
-                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
                 .foregroundStyle(.secondary)
             }
 
@@ -122,7 +122,7 @@ struct CapturePanelView: View {
                         Text(showDetails ? "Hide details" : "Details")
                         Image(systemName: "chevron.down").rotationEffect(.degrees(showDetails ? 180 : 0))
                     }
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
@@ -140,7 +140,7 @@ struct CapturePanelView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(Array(coordinator.recentTranscript.enumerated()), id: \.offset) { index, line in
                                 Text(line)
-                                    .font(.system(size: 12, design: .rounded))
+                                    .font(.system(size: 12, design: .monospaced))
                                     .foregroundStyle(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .id(index)
@@ -159,7 +159,7 @@ struct CapturePanelView: View {
                     ForEach(coordinator.livePoints.prefix(5), id: \.self) { point in
                         HStack(alignment: .top, spacing: 8) {
                             Circle().fill(.tertiary).frame(width: 4, height: 4).padding(.top, 6)
-                            Text(point).font(.system(size: 13, design: .rounded))
+                            Text(point).font(.system(size: 13, design: .monospaced))
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
@@ -199,7 +199,7 @@ struct CapturePanelView: View {
             }
             if let summary = coordinator.lastSummary {
                 Text(summary)
-                    .font(.system(size: 13, design: .rounded))
+                    .font(.system(size: 13, design: .monospaced))
                     .foregroundStyle(.secondary)
                     .lineSpacing(3).lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
@@ -209,7 +209,7 @@ struct CapturePanelView: View {
                 NSApplication.shared.activate(ignoringOtherApps: true)
             } label: {
                 Label("Open in RevueAI", systemImage: "arrow.up.forward.app")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
             }
             .buttonStyle(.plain)
             .foregroundStyle(Theme.accent)
@@ -227,7 +227,7 @@ struct CapturePanelView: View {
     private func banner(_ text: String, icon: String, tint: Color) -> some View {
         HStack(alignment: .top, spacing: 9) {
             Image(systemName: icon).foregroundStyle(tint)
-            Text(text).font(.system(size: 12, design: .rounded)).fixedSize(horizontal: false, vertical: true)
+            Text(text).font(.system(size: 12, design: .monospaced)).fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)

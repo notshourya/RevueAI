@@ -263,7 +263,7 @@ struct DetailHeader: View {
 
     var body: some View {
         Text(title.uppercased())
-            .font(.system(size: 10, weight: .heavy, design: .rounded))
+            .font(.system(size: 10, weight: .heavy, design: .monospaced))
             .tracking(0.6)
             .foregroundStyle(.secondary)
     }
