@@ -27,6 +27,7 @@ struct RootShellView: View {
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @Environment(\.openWindow) private var openWindow
     @State private var showOnboarding = false
     @State private var notifier = ArmedMeetingNotifier()
     @State private var duePrompt: PlannedCapture?
@@ -50,7 +51,7 @@ struct RootShellView: View {
                                 notifier.sync(with: context)
                             }
                         })
-                .navigationSplitViewColumnWidth(min: 270, ideal: 320)
+                .navigationSplitViewColumnWidth(320)
         } detail: {
             readerContent
         }
@@ -61,6 +62,14 @@ struct RootShellView: View {
             // reorders the export menu to the trailing corner in AppKit;
             // the spacer then fills the gap left of the centered field.
             ToolbarSpacer(.flexible)
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    openWindow(id: "orbLab")
+                } label: {
+                    Label("Orb Lab", systemImage: "wand.and.stars")
+                }
+                .help("Open the Orb Lab tuning panel")
+            }
             ToolbarItem(placement: .primaryAction) {
                 exportMenu
             }
