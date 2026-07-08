@@ -23,7 +23,6 @@ struct RootShellView: View {
     @Environment(\.modelContext) private var context
     @State private var selection: ReviewNote?
     @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
-    @State private var showCalendarSurface = false
     @State private var calendarModel = CalendarPaneModel(calendar: CalendarService())
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
@@ -45,9 +44,11 @@ struct RootShellView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             LibraryPane(selection: $selection,
                         calendarModel: calendarModel,
-                        onOpenCalendar: { day in
-                            calendarModel.selectedDay = day
-                            withAnimation(.smooth) { showCalendarSurface = true }
+                        onArmChanged: {
+                            Task {
+                                await notifier.ensureAuthorization()
+                                notifier.sync(with: context)
+                            }
                         })
                 .navigationSplitViewColumnWidth(min: 270, ideal: 320)
         } detail: {
@@ -71,11 +72,6 @@ struct RootShellView: View {
         }
         .onChange(of: coordinator.state) { _, newValue in
             floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
-        }
-        .onChange(of: selection) { _, newValue in
-            if newValue != nil {
-                withAnimation(.smooth) { showCalendarSurface = false }
-            }
         }
         .onChange(of: floatingOrbEnabled) { _, enabled in
             floatingOrb.update(state: coordinator.state, enabled: enabled, coordinator: coordinator)
@@ -162,10 +158,7 @@ struct RootShellView: View {
         var descriptor = FetchDescriptor<ReviewNote>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
         guard let note = try? context.fetch(descriptor).first else { return }
-        withAnimation(.smooth) {
-            showCalendarSurface = false
-            selection = note
-        }
+        withAnimation(.smooth) { selection = note }
     }
 
     private func startFromPlanned(_ planned: PlannedCapture) {
@@ -199,7 +192,7 @@ struct RootShellView: View {
         } label: {
             Label("Export", systemImage: "square.and.arrow.up")
         }
-        .disabled(selection == nil || showCalendarSurface)
+        .disabled(selection == nil)
         .help("Copy or share this review")
     }
 
@@ -357,24 +350,7 @@ struct RootShellView: View {
 
     @ViewBuilder
     private var readerBody: some View {
-        if showCalendarSurface {
-            CalendarSurfaceView(model: calendarModel,
-                                onOpenNote: { note in
-                                    withAnimation(.smooth) {
-                                        showCalendarSurface = false
-                                        selection = note
-                                    }
-                                },
-                                onArmChanged: {
-                                    Task {
-                                        await notifier.ensureAuthorization()
-                                        notifier.sync(with: context)
-                                    }
-                                },
-                                onClose: {
-                                    withAnimation(.smooth) { showCalendarSurface = false }
-                                })
-        } else if let selection {
+        if let selection {
             NoteDetailView(note: selection)
         } else {
             ZStack {

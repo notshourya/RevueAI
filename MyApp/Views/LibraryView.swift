@@ -11,14 +11,27 @@ struct LibraryPane: View {
 
     @Binding var selection: ReviewNote?
     var calendarModel: CalendarPaneModel
-    var onOpenCalendar: (Date) -> Void = { _ in }
+    var onArmChanged: () -> Void = {}
 
     @State private var showArchived = false
+    @State private var filterDay: Date?
 
-    private var shownNotes: [ReviewNote] { notes.filter { $0.isArchived == showArchived } }
+    private var shownNotes: [ReviewNote] {
+        notes.filter { note in
+            guard note.isArchived == showArchived else { return false }
+            if let filterDay {
+                return Calendar.current.isDate(note.date, inSameDayAs: filterDay)
+            }
+            return true
+        }
+    }
 
     var body: some View {
         ScrollView {
+            if let filterDay {
+                filterChip(for: filterDay)
+                    .padding(.top, 10)
+            }
             HStack(alignment: .top, spacing: 10) {
                 ForEach(0..<2, id: \.self) { column in
                     LazyVStack(spacing: 10) {
@@ -51,6 +64,11 @@ struct LibraryPane: View {
             }
         }
         .onChange(of: showArchived) { selection = shownNotes.first }
+        .onChange(of: filterDay) {
+            if selection == nil || !shownNotes.contains(where: { $0 == selection }) {
+                selection = shownNotes.first
+            }
+        }
         .onChange(of: shownNotes.count) {
             if selection == nil || !shownNotes.contains(where: { $0 == selection }) {
                 selection = shownNotes.first
@@ -95,12 +113,35 @@ struct LibraryPane: View {
         }
     }
 
-    // MARK: - Bottom dock (mini calendar, always present)
+    // MARK: - Bottom dock (date ruler, always present)
 
     private var bottomDock: some View {
-        MiniCalendarView(model: calendarModel, onOpenDay: onOpenCalendar)
+        DateRulerView(model: calendarModel,
+                      filterDay: $filterDay,
+                      onOpenNote: { selection = $0 },
+                      onArmChanged: onArmChanged)
             .padding(.horizontal, 12)
             .padding(.bottom, 10)
+    }
+
+    /// Shown while the ruler filters the library to one past day.
+    private func filterChip(for day: Date) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "line.3.horizontal.decrease.circle.fill")
+            Text("Showing \(day.formatted(date: .abbreviated, time: .omitted))")
+            Button {
+                withAnimation(.smooth) { filterDay = nil }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+            }
+            .buttonStyle(.plain)
+            .help("Clear the date filter")
+        }
+        .font(.caption.weight(.medium))
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .glassEffect(.regular, in: .capsule)
     }
 
     // MARK: - Empty state
