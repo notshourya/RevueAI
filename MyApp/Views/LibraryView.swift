@@ -145,6 +145,13 @@ private struct ReviewCard: View {
     let note: ReviewNote
     var isSelected = false
 
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// Deepens the glass in dark mode, brightens it in light mode.
+    private var glassTint: Color {
+        colorScheme == .dark ? .black.opacity(0.25) : .white.opacity(0.35)
+    }
+
     private var itemCount: Int { note.actionItems?.count ?? 0 }
     private var openCount: Int { (note.openQuestions ?? []).filter { !$0.isResolved }.count }
     private static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
@@ -178,7 +185,7 @@ private struct ReviewCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular.tint(.black.opacity(0.38)), in: Self.shape)
+        .glassEffect(.regular.tint(glassTint), in: Self.shape)
         .overlay(Self.shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
         .contentShape(Self.shape)
     }
