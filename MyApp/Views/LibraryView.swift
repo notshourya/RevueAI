@@ -154,7 +154,7 @@ private struct ReviewCard: View {
 
     private var itemCount: Int { note.actionItems?.count ?? 0 }
     private var openCount: Int { (note.openQuestions ?? []).filter { !$0.isResolved }.count }
-    private static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+    private static let shape = RoundedRectangle(cornerRadius: 32, style: .continuous)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
