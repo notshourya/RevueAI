@@ -2,12 +2,11 @@ import SwiftUI
 import SwiftData
 import AppKit
 
-/// The reading view: an immersive, open-page layout — no card boxes. A soft
-/// verdict-tinted ambience sits behind the hero; summary and decisions read
-/// as editorial sections; the board's item rows are the only glass surfaces.
+/// The reading view: a clean, open-page layout — no card boxes. Summary and
+/// decisions read as editorial sections; the verdict badge carries the only
+/// status color, and the board's item rows are the only glass surfaces.
 struct NoteDetailView: View {
     @Bindable var note: ReviewNote
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ScrollView {
@@ -26,17 +25,7 @@ struct NoteDetailView: View {
         }
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
-        .background {
-            ZStack(alignment: .top) {
-                PremiumBackground()
-                RadialGradient(
-                    colors: [note.verdict.tint.opacity(colorScheme == .dark ? 0.14 : 0.09), .clear],
-                    center: .init(x: 0.3, y: 0),
-                    startRadius: 0, endRadius: 640
-                )
-                .ignoresSafeArea()
-            }
-        }
+        .background { PremiumBackground() }
     }
 
     // MARK: - Header
