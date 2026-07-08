@@ -67,6 +67,10 @@ struct TourOverlayModifier: ViewModifier {
                     }
                 }
                 .ignoresSafeArea()
+                // Only intercept events while a step is on screen; otherwise the
+                // window-spanning overlay would swallow every click and block
+                // sidebar scrolling even when the tour is idle.
+                .allowsHitTesting(controller.current != nil)
                 .background(WindowProbe(window: $window))
             }
     }
@@ -120,12 +124,18 @@ struct TourOverlayModifier: ViewModifier {
     }
 }
 
-/// Zero-size probe capturing the hosting NSWindow.
+/// Probe capturing the hosting NSWindow. Its NSView must be transparent to
+/// AppKit hit testing: as a real subview spanning the window it would
+/// otherwise swallow every click and scroll before SwiftUI sees them.
 private struct WindowProbe: NSViewRepresentable {
     @Binding var window: NSWindow?
 
+    final class PassthroughView: NSView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+
     func makeNSView(context: Context) -> NSView {
-        let view = NSView()
+        let view = PassthroughView()
         DispatchQueue.main.async { [weak view] in window = view?.window }
         return view
     }
