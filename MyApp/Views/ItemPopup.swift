@@ -2,7 +2,8 @@ import SwiftUI
 import SwiftData
 
 // Detail content for extracted items, shown in popovers anchored to their
-// rows (action items, open questions, decisions).
+// rows (action items, open questions, decisions). Styled to the app's glass
+// language: kerned small-caps section headers, glass chips, sealed footer.
 
 // MARK: - Action item detail
 
@@ -14,97 +15,137 @@ struct ActionItemDetail: View {
     @State private var allTags: [String] = []
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 8) {
-                    Picker("Priority", selection: $item.priority) {
-                        ForEach(ActionPriority.allCases) { priority in
-                            Text(priority.displayName).tag(priority)
-                        }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
-                    Picker("Category", selection: $item.category) {
-                        ForEach(ActionCategory.allCases) { category in
-                            Text(category.displayName).tag(category)
-                        }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
-                    Spacer()
-                    Button {
-                        item.isDone.toggle()
-                    } label: {
-                        Label(item.isDone ? "Completed" : "Mark complete",
-                              systemImage: item.isDone ? "checkmark.circle.fill" : "circle")
-                            .font(Theme.rounded(12, .semibold))
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(item.isDone ? Theme.success : .secondary)
-                }
-
-                TextField("What needs to happen", text: $item.oneLiner, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(Theme.display(17, .semibold))
-
-                if !item.rationale.isEmpty {
-                    DetailSection(title: "Why it matters", text: item.rationale, tint: item.priority.tint)
-                }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    DetailHeader(title: "In depth")
-                    TextField("Add detail", text: $item.inDepthDetail, axis: .vertical)
+        VStack(alignment: .leading, spacing: 0) {
+            header
+                .padding(.horizontal, 18)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
+            Divider().opacity(0.4)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    TextField("What needs to happen", text: $item.oneLiner, axis: .vertical)
                         .textFieldStyle(.plain)
-                        .font(Theme.rounded(13))
-                }
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .strikethrough(item.isDone)
 
-                tagEditor
+                    if !item.rationale.isEmpty {
+                        DetailSection(title: "Why it matters", text: item.rationale, tint: item.priority.tint)
+                    }
 
-                if !item.supportingQuotes.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        DetailHeader(title: "From the discussion")
-                        ForEach(item.supportingQuotes, id: \.self) { quote in
-                            Text("“\(quote)”")
-                                .font(Theme.rounded(12).italic())
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, 8)
-                                .overlay(alignment: .leading) {
-                                    Capsule().fill(item.priority.tint.opacity(0.4)).frame(width: 2)
-                                }
+                        DetailHeader(title: "In depth")
+                        TextField("Add detail", text: $item.inDepthDetail, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .font(Theme.rounded(13))
+                            .lineSpacing(3)
+                    }
+
+                    tagEditor
+
+                    if !item.supportingQuotes.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            DetailHeader(title: "From the discussion")
+                            ForEach(item.supportingQuotes, id: \.self) { quote in
+                                Text("“\(quote)”")
+                                    .font(Theme.rounded(12).italic())
+                                    .foregroundStyle(.secondary)
+                                    .lineSpacing(2)
+                                    .padding(.leading, 10)
+                                    .overlay(alignment: .leading) {
+                                        Capsule().fill(item.priority.tint.opacity(0.5)).frame(width: 2.5)
+                                    }
+                            }
                         }
                     }
                 }
-
-                HStack {
-                    if !item.attribution.isEmpty {
-                        Text("Raised by \(item.attribution)")
-                            .font(Theme.rounded(11))
-                            .foregroundStyle(.tertiary)
-                    }
-                    Spacer()
-                    Button(role: .destructive) {
-                        dismiss()
-                        context.delete(item)
-                        try? context.save()
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                            .font(Theme.rounded(11, .medium))
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(.red)
-                    .foregroundStyle(.red)
-                }
+                .padding(18)
             }
-            .padding(16)
+            Divider().opacity(0.4)
+            footer
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
         }
-        .frame(width: 380)
-        .frame(maxHeight: 480)
+        .frame(width: 420)
+        .frame(maxHeight: 540)
         .onAppear { allTags = ActionItem.allTags(in: context) }
         .onChange(of: item.oneLiner) { markEdited() }
         .onChange(of: item.inDepthDetail) { markEdited() }
         .onChange(of: item.priority) { markEdited() }
         .onChange(of: item.category) { markEdited() }
         .onChange(of: item.tags) { markEdited() }
+    }
+
+    // MARK: - Header (pickers + complete)
+
+    private var header: some View {
+        HStack(spacing: 8) {
+            Picker("Priority", selection: $item.priority) {
+                ForEach(ActionPriority.allCases) { priority in
+                    Text(priority.displayName).tag(priority)
+                }
+            }
+            .labelsHidden()
+            .fixedSize()
+            .tint(item.priority.tint)
+
+            Picker("Category", selection: $item.category) {
+                ForEach(ActionCategory.allCases) { category in
+                    Label(category.displayName, systemImage: category.systemImage).tag(category)
+                }
+            }
+            .labelsHidden()
+            .fixedSize()
+
+            Spacer()
+
+            Button {
+                withAnimation(.smooth) { item.isDone.toggle() }
+            } label: {
+                Label(item.isDone ? "Completed" : "Complete",
+                      systemImage: item.isDone ? "checkmark.circle.fill" : "circle")
+                    .font(Theme.rounded(12, .semibold))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .glassEffect(item.isDone ? .regular.tint(Theme.success.opacity(0.25)) : .regular,
+                                 in: .capsule)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(item.isDone ? Theme.success : .secondary)
+            .help(item.isDone ? "Reopen this item" : "Mark this item complete")
+        }
+    }
+
+    // MARK: - Footer (attribution + delete)
+
+    private var footer: some View {
+        HStack {
+            if !item.attribution.isEmpty {
+                Label("Raised by \(item.attribution)", systemImage: "person")
+                    .font(Theme.rounded(11))
+                    .foregroundStyle(.tertiary)
+            }
+            if item.userModified || item.isUserCreated {
+                Label("Edited", systemImage: "pencil")
+                    .font(Theme.rounded(10, .medium))
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .glassEffect(.regular, in: .capsule)
+                    .help("Your edits survive the final polish")
+            }
+            Spacer()
+            Button(role: .destructive) {
+                dismiss()
+                context.delete(item)
+                try? context.save()
+            } label: {
+                Label("Delete", systemImage: "trash")
+                    .font(Theme.rounded(11, .medium))
+            }
+            .buttonStyle(.bordered)
+            .tint(.red)
+            .foregroundStyle(.red)
+        }
     }
 
     private func markEdited() {
@@ -120,30 +161,36 @@ struct ActionItemDetail: View {
     }
 
     private var tagEditor: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             DetailHeader(title: "Tags")
             FlowLayoutish {
                 ForEach(item.tags, id: \.self) { tag in
-                    HStack(spacing: 3) {
+                    HStack(spacing: 4) {
                         Text(tag)
                         Button {
-                            item.tags.removeAll { $0 == tag }
+                            withAnimation(.smooth) { item.tags.removeAll { $0 == tag } }
                         } label: {
                             Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
                         }
                         .buttonStyle(.plain)
                     }
                     .font(Theme.rounded(11, .medium))
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Theme.accent.opacity(0.14), in: Capsule())
-                    .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.24), lineWidth: 1))
+                    .padding(.horizontal, 9).padding(.vertical, 4)
+                    .glassEffect(.regular.tint(Theme.accent.opacity(0.18)), in: .capsule)
                     .foregroundStyle(Theme.accent)
                 }
-                TextField("Add tag", text: $newTag)
-                    .textFieldStyle(.plain)
-                    .font(Theme.rounded(11))
-                    .frame(minWidth: 60, maxWidth: 100)
-                    .onSubmit { addTag(newTag) }
+                HStack(spacing: 4) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.tertiary)
+                    TextField("Add tag", text: $newTag)
+                        .textFieldStyle(.plain)
+                        .font(Theme.rounded(11))
+                        .frame(minWidth: 56, maxWidth: 100)
+                        .onSubmit { addTag(newTag) }
+                }
+                .padding(.horizontal, 9).padding(.vertical, 4)
+                .glassEffect(.regular, in: .capsule)
             }
             if !suggestions.isEmpty {
                 HStack(spacing: 6) {
@@ -152,6 +199,8 @@ struct ActionItemDetail: View {
                             .buttonStyle(.plain)
                             .font(Theme.rounded(11))
                             .foregroundStyle(.secondary)
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .glassEffect(.regular, in: .capsule)
                     }
                 }
             }
@@ -161,7 +210,7 @@ struct ActionItemDetail: View {
     private func addTag(_ raw: String) {
         let tag = raw.trimmingCharacters(in: .whitespaces)
         guard !tag.isEmpty, !item.tags.contains(tag) else { newTag = ""; return }
-        item.tags.append(tag)
+        withAnimation(.smooth) { item.tags.append(tag) }
         newTag = ""
     }
 }
@@ -206,29 +255,38 @@ struct QuestionDetail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Button {
-                question.isResolved.toggle()
-            } label: {
-                Label(question.isResolved ? "Resolved" : "Mark resolved",
-                      systemImage: question.isResolved ? "checkmark.circle.fill" : "circle")
-                    .font(Theme.rounded(12, .semibold))
+            HStack {
+                DetailHeader(title: "Open question")
+                Spacer()
+                Button {
+                    withAnimation(.smooth) { question.isResolved.toggle() }
+                } label: {
+                    Label(question.isResolved ? "Resolved" : "Resolve",
+                          systemImage: question.isResolved ? "checkmark.circle.fill" : "circle")
+                        .font(Theme.rounded(12, .semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .glassEffect(question.isResolved ? .regular.tint(Theme.success.opacity(0.25)) : .regular,
+                                     in: .capsule)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(question.isResolved ? Theme.success : .secondary)
             }
-            .buttonStyle(.plain)
-            .foregroundStyle(question.isResolved ? Theme.success : .secondary)
 
             Text(question.text)
-                .font(Theme.display(16, .semibold))
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .strikethrough(question.isResolved)
                 .textSelection(.enabled)
+                .lineSpacing(2)
 
             if !question.attribution.isEmpty {
-                Text("Asked by \(question.attribution)")
+                Label("Asked by \(question.attribution)", systemImage: "person")
                     .font(Theme.rounded(11))
                     .foregroundStyle(.tertiary)
             }
         }
-        .padding(16)
-        .frame(width: 340)
+        .padding(18)
+        .frame(width: 360)
     }
 }
 
@@ -239,20 +297,24 @@ struct DecisionDetail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Decision", systemImage: "checkmark.seal")
-                .font(Theme.rounded(12, .bold))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.seal.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(Theme.success)
+                DetailHeader(title: "Decision")
+            }
             Text(decision.statement)
-                .font(Theme.display(16, .semibold))
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
                 .textSelection(.enabled)
+                .lineSpacing(2)
             if !decision.attribution.isEmpty {
-                Text("Decided by \(decision.attribution)")
+                Label("Decided by \(decision.attribution)", systemImage: "person")
                     .font(Theme.rounded(11))
                     .foregroundStyle(.tertiary)
             }
         }
-        .padding(16)
-        .frame(width: 340)
+        .padding(18)
+        .frame(width: 360)
     }
 }
 
@@ -263,8 +325,8 @@ struct DetailHeader: View {
 
     var body: some View {
         Text(title.uppercased())
-            .font(.system(size: 10, weight: .heavy, design: .rounded))
-            .tracking(0.6)
+            .font(.system(size: 11, weight: .heavy, design: .rounded))
+            .kerning(0.8)
             .foregroundStyle(.secondary)
     }
 }
