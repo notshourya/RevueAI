@@ -11,9 +11,18 @@ struct OnboardingPagesTests {
         }
     }
 
-    @Test func tourCoversPermissionsAndCapture() {
-        let titles = OnboardingPage.all.map(\.title).joined(separator: " ")
-        #expect(titles.contains("Microphone"))
-        #expect(titles.contains("Participants"))
+    @Test func pageIDsAndArtAreUnique() {
+        #expect(Set(OnboardingPage.all.map(\.id)).count == OnboardingPage.all.count)
+        #expect(Set(OnboardingPage.all.map(\.art)).count == OnboardingPage.all.count)
+    }
+
+    @Test func slidesCoverPrivacyBoardRulerAssistant() {
+        let text = OnboardingPage.all.map { $0.title + " " + $0.subtitle }
+            .joined(separator: " ")
+            .lowercased()
+        #expect(text.contains("recorded"))
+        #expect(text.contains("board"))
+        #expect(text.contains("ruler"))
+        #expect(text.contains("cites"))
     }
 }

@@ -1,47 +1,44 @@
 import Foundation
 
-/// Content for the first-run tour. Kept as plain data so the copy is testable
-/// and the presentation layer (TourKit) stays swappable.
-struct OnboardingPage: Identifiable {
+/// Which live illustration a slide renders (see SlideArtView). Live views
+/// instead of pre-rendered art: always in sync with the design, adaptive
+/// to light/dark.
+enum SlideArt: String, CaseIterable {
+    case orb, privacy, liveNote, ruler, assistant
+}
+
+/// Content for the first-run tour. Plain data so the copy is testable.
+struct OnboardingPage: Identifiable, Equatable {
     let id: Int
-    let systemImage: String
+    let art: SlideArt
     let title: String
     let subtitle: String
 
-    /// Name of the pre-rendered slide artwork bundled as a resource
-    /// (see `Tools/render-tour-art.swift`).
-    var imageName: String { "tour_\(id)" }
-
     static let all: [OnboardingPage] = [
         OnboardingPage(
-            id: 0,
-            systemImage: "circle.hexagongrid.fill",
+            id: 0, art: .orb,
             title: "Meet RevueAI",
             subtitle: "Your reviews, captured as structured notes — summaries, action items, and decisions, extracted live while you talk."
         ),
         OnboardingPage(
-            id: 1,
-            systemImage: "lock.shield.fill",
+            id: 1, art: .privacy,
             title: "Nothing is ever recorded",
             subtitle: "Audio is transcribed on-device and discarded instantly. No recordings, no transcripts on disk — only the structured note survives."
         ),
         OnboardingPage(
-            id: 2,
-            systemImage: "mic.fill",
-            title: "Microphone access",
-            subtitle: "RevueAI listens through your mic to transcribe what you say. You'll grant this on the next screen."
+            id: 2, art: .liveNote,
+            title: "Talk, and the note builds itself",
+            subtitle: "Action items land on a board you can curate — complete, reorder, tag. Your edits always survive the AI's final polish."
         ),
         OnboardingPage(
-            id: 3,
-            systemImage: "person.2.wave.2.fill",
-            title: "Hear Participants too",
-            subtitle: "To capture the other side of Zoom, Meet, or Teams calls, RevueAI needs System Audio Recording — enabled in Privacy & Security."
+            id: 3, art: .ruler,
+            title: "Your meetings, on a ruler",
+            subtitle: "Scrub your history like a timer dial, filter the library by day, and arm upcoming meetings to capture themselves."
         ),
         OnboardingPage(
-            id: 4,
-            systemImage: "waveform",
-            title: "Start your first capture",
-            subtitle: "Hit the orb when your next review starts. Stop when it ends — your note is ready seconds later."
+            id: 4, art: .assistant,
+            title: "Ask your notes anything",
+            subtitle: "The search bar is an assistant: it answers from your reviews and cites the notes it used."
         ),
     ]
 }
