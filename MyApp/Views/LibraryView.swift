@@ -178,7 +178,7 @@ private struct ReviewCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Self.shape.fill(Color.primary.opacity(0.055)))
+        .glassEffect(.regular.tint(.black.opacity(0.38)), in: Self.shape)
         .overlay(Self.shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
         .contentShape(Self.shape)
     }
