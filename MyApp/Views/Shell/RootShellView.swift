@@ -280,8 +280,6 @@ struct RootShellView: View {
         @discardableResult
         static func centerSearchItem(in window: NSWindow?) -> Bool {
             guard let toolbar = window?.toolbar else { return false }
-            dump(toolbar, phase: "before")
-            defer { dump(toolbar, phase: "after") }
 
             // The export menu must sit in the trailing corner, i.e. after
             // the search item — an ordering SwiftUI cannot express (it
@@ -324,24 +322,6 @@ struct RootShellView: View {
             return true
         }
 
-        /// Temporary diagnostics: dumps the toolbar's real item list so the
-        /// exact identifiers/classes can be inspected from the container.
-        private static func dump(_ toolbar: NSToolbar, phase: String) {
-            let lines = toolbar.items.enumerated().map { index, item in
-                "\(index): \(item.itemIdentifier.rawValue) [\(type(of: item))]"
-            }
-            let text = "=== \(phase) \(Date.now.formatted(date: .omitted, time: .standard)) ===\n"
-                + lines.joined(separator: "\n") + "\n"
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("toolbar-diagnostics.txt")
-            if let handle = try? FileHandle(forWritingTo: url) {
-                handle.seekToEndOfFile()
-                handle.write(Data(text.utf8))
-                try? handle.close()
-            } else {
-                try? Data(text.utf8).write(to: url)
-            }
-        }
     }
 
     /// Zero-size probe that reports when the toolbar search field activates
