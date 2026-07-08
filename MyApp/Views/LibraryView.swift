@@ -28,27 +28,27 @@ struct LibraryPane: View {
 
     var body: some View {
         GeometryReader { geo in
-            // Siri-style sizing: the card DESIGN scales with the column —
-            // type, padding, and radius grow together like a zoom, instead
-            // of the text just re-wrapping wider.
-            let columnWidth = (geo.size.width - 24 - 12) / 2
-            let cardScale = min(max(columnWidth / 220, 0.9), 1.7)
+            // Siri-style tiles: cards are FIXED width and never stretch.
+            // Resizing changes the column count and margins, nothing else.
+            let cardWidth: CGFloat = 210
+            let spacing: CGFloat = 12
+            let available = geo.size.width - 24
+            let columnCount = max(1, Int((available + spacing) / (cardWidth + spacing)))
             ScrollView {
                 if let filterDay {
                     filterChip(for: filterDay)
                         .padding(.top, 10)
                 }
-                HStack(alignment: .top, spacing: 12) {
-                    ForEach(0..<2, id: \.self) { column in
-                        LazyVStack(spacing: 12) {
-                            ForEach(distributed(into: 2)[column]) { note in
-                                ReviewCard(note: note,
-                                           isSelected: selection == note,
-                                           scale: cardScale)
+                HStack(alignment: .top, spacing: spacing) {
+                    ForEach(0..<columnCount, id: \.self) { column in
+                        LazyVStack(spacing: spacing) {
+                            ForEach(distributed(into: columnCount)[column]) { note in
+                                ReviewCard(note: note, isSelected: selection == note)
                                     .onTapGesture { selection = note }
                                     .contextMenu { rowMenu(note) }
                             }
                         }
+                        .frame(width: cardWidth)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
