@@ -21,11 +21,12 @@ struct DateRulerView: View {
     private static let pastDays = 365
     private static let futureDays = 90
     private static var todayIndex: Int { pastDays }
-    private static let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
+    private static let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
 
-    /// Same adaptive glass as the review cards.
+    /// Deliberately darker and squarer than the review cards — the ruler is
+    /// an instrument, not a card.
     private var glassTint: Color {
-        colorScheme == .dark ? .black.opacity(0.33) : .white.opacity(0.35)
+        colorScheme == .dark ? .black.opacity(0.58) : .black.opacity(0.16)
     }
 
     private var selectedDay: Date {
@@ -81,7 +82,8 @@ struct DateRulerView: View {
             } label: {
                 VStack(spacing: 0) {
                     Text(selectedDay, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.red)
                         .contentTransition(.numericText())
                         .animation(.smooth(duration: 0.2), value: selectedDay)
                     Image(systemName: "chevron.compact.down")
@@ -125,16 +127,17 @@ struct DateRulerView: View {
         .scrollPosition(id: $selectedIndex, anchor: .center)
         .scrollTargetBehavior(.viewAligned)
         .contentMargins(.horizontal, 130, for: .scrollContent)
-        .frame(height: 42)
+        .frame(height: 58)
         .overlay {
             // Fixed center pointer under the readout.
             VStack(spacing: 0) {
                 Triangle()
-                    .fill(Color.accentColor)
+                    .fill(Color.red)
                     .frame(width: 9, height: 5)
                 Rectangle()
-                    .fill(Color.accentColor)
-                    .frame(width: 2, height: 26)
+                    .fill(Color.red)
+                    .frame(width: 2, height: 34)
+                Spacer(minLength: 0)
             }
             .allowsHitTesting(false)
         }
@@ -164,8 +167,12 @@ private struct RulerTick: View {
     let day: Date
     let hasNotes: Bool
 
-    private var isFirstOfMonth: Bool { Calendar.current.component(.day, from: day) == 1 }
+    private var dayOfMonth: Int { Calendar.current.component(.day, from: day) }
+    private var isFirstOfMonth: Bool { dayOfMonth == 1 }
+    private var isWeekStart: Bool { Calendar.current.component(.weekday, from: day) == Calendar.current.firstWeekday }
     private var isToday: Bool { Calendar.current.isDateInToday(day) }
+    /// Numbered like an instrument scale: every fifth day carries its numeral.
+    private var showsNumeral: Bool { dayOfMonth % 5 == 0 && !isFirstOfMonth }
 
     var body: some View {
         VStack(spacing: 2) {
@@ -173,18 +180,25 @@ private struct RulerTick: View {
                 .fill(hasNotes ? Color.accentColor : .clear)
                 .frame(width: 3.5, height: 3.5)
             RoundedRectangle(cornerRadius: 1)
-                .fill(isToday ? Color.red.opacity(0.85) : Color.secondary.opacity(isFirstOfMonth ? 0.75 : 0.4))
-                .frame(width: 2, height: isFirstOfMonth ? 20 : 12)
-            if isFirstOfMonth {
-                Text(day, format: .dateTime.month(.abbreviated))
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundStyle(.tertiary)
-                    .fixedSize()
-            } else {
-                Color.clear.frame(height: 10)
+                .fill(isToday ? Color.red.opacity(0.9)
+                      : Color.secondary.opacity(isFirstOfMonth ? 0.8 : isWeekStart ? 0.6 : 0.35))
+                .frame(width: isFirstOfMonth ? 2.5 : 2,
+                       height: isFirstOfMonth ? 26 : isWeekStart ? 20 : 13)
+            Group {
+                if isFirstOfMonth {
+                    Text(day, format: .dateTime.month(.abbreviated))
+                        .fontWeight(.semibold)
+                } else if showsNumeral {
+                    Text("\(dayOfMonth)")
+                } else {
+                    Text(" ")
+                }
             }
+            .font(.system(size: 8, design: .monospaced))
+            .foregroundStyle(isFirstOfMonth ? .secondary : .tertiary)
+            .fixedSize()
         }
-        .frame(width: 12, height: 42, alignment: .top)
+        .frame(width: 12, height: 58, alignment: .top)
     }
 }
 
