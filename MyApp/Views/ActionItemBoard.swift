@@ -169,11 +169,23 @@ private struct BoardColumn<Content: View>: View {
     @State private var isTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage).font(.system(size: 11, weight: .semibold)).foregroundStyle(accent)
-                Text(title).font(.system(size: 13, weight: .bold, design: .rounded))
-                Text("\(count)").font(.system(size: 11, weight: .bold, design: .rounded)).foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 7) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(accent)
+                    .frame(width: 22, height: 22)
+                    .glassEffect(.regular, in: Circle())
+                Text(title.uppercased())
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .kerning(0.8)
+                    .foregroundStyle(.secondary)
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .glassEffect(.regular, in: .capsule)
                 Spacer()
             }
 
@@ -189,15 +201,12 @@ private struct BoardColumn<Content: View>: View {
             if let footer { footer }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .fill(Theme.panel.opacity(isTargeted ? 0.52 : 0.30))
-        )
+        .padding(14)
+        .contentCard(radius: 24)
         .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .strokeBorder(isTargeted ? Theme.accent : Theme.panelStroke,
-                              style: StrokeStyle(lineWidth: isTargeted ? 1.5 : 1, dash: isTargeted ? [5] : []))
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .strokeBorder(isTargeted ? Color.accentColor : .clear,
+                              style: StrokeStyle(lineWidth: 1.5, dash: isTargeted ? [5] : []))
         )
         .animation(.smooth(duration: 0.2), value: isTargeted)
         .modifier(DropIfNeeded(dropAction: dropAction, isTargeted: $isTargeted))
