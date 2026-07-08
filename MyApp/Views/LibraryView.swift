@@ -18,23 +18,21 @@ struct LibraryPane: View {
     private var shownNotes: [ReviewNote] { notes.filter { $0.isArchived == showArchived } }
 
     var body: some View {
-        List(selection: $selection) {
-            ForEach(shownNotes) { note in
-                NoteRow(note: note)
-                    .tag(note)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                        Button(role: .destructive) { delete(note) } label: {
-                            Label("Delete", systemImage: "trash")
+        ScrollView {
+            HStack(alignment: .top, spacing: 10) {
+                ForEach(0..<2, id: \.self) { column in
+                    LazyVStack(spacing: 10) {
+                        ForEach(distributed(into: 2)[column]) { note in
+                            ReviewCard(note: note, isSelected: selection == note)
+                                .onTapGesture { selection = note }
+                                .contextMenu { rowMenu(note) }
                         }
-                        Button { archive(note) } label: {
-                            Label(note.isArchived ? "Unarchive" : "Archive", systemImage: "archivebox")
-                        }
-                        .tint(.orange)
                     }
-                    .contextMenu { rowMenu(note) }
+                }
             }
+            .padding(12)
         }
-        .listStyle(.sidebar)
+        .scrollEdgeEffectStyle(.soft, for: .all)
         .navigationTitle(showArchived ? "Archived" : "Reviews")
         .overlay {
             if shownNotes.isEmpty { emptyState }
@@ -66,6 +64,25 @@ struct LibraryPane: View {
                 selection = shownNotes.first
             }
         }
+    }
+
+    /// Greedy masonry: each review goes to the currently-shortest column so
+    /// heights stay balanced and cards stagger like the Siri history grid.
+    private func distributed(into columnCount: Int) -> [[ReviewNote]] {
+        var columns = Array(repeating: [ReviewNote](), count: columnCount)
+        var heights = Array(repeating: CGFloat(0), count: columnCount)
+        for note in shownNotes {
+            let target = heights.firstIndex(of: heights.min() ?? 0) ?? 0
+            columns[target].append(note)
+            heights[target] += estimatedHeight(note)
+        }
+        return columns
+    }
+
+    private func estimatedHeight(_ note: ReviewNote) -> CGFloat {
+        let titleLines = min(3, max(1, note.title.count / 16 + 1))
+        let bodyLines = note.summary.isEmpty ? 0 : min(4, note.summary.count / 20 + 1)
+        return CGFloat(78 + titleLines * 19 + bodyLines * 15)
     }
 
     @ViewBuilder
@@ -120,29 +137,49 @@ struct LibraryPane: View {
     }
 }
 
-// MARK: - Sidebar row
+// MARK: - Review card (Siri-history style)
 
-private struct NoteRow: View {
+/// A soft rounded card: timestamp caption, bold title, summary preview, and
+/// a compact status row. Selection is a ring, like the Siri history grid.
+private struct ReviewCard: View {
     let note: ReviewNote
+    var isSelected = false
 
     private var itemCount: Int { note.actionItems?.count ?? 0 }
     private var openCount: Int { (note.openQuestions ?? []).filter { !$0.isResolved }.count }
+    private static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(note.title)
-                .font(.body.weight(.medium))
-                .lineLimit(1)
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(note.date, format: .relative(presentation: .named))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(note.title.isEmpty ? "Untitled review" : note.title)
+                .font(.system(size: 15, weight: .bold))
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
+            if !note.summary.isEmpty {
+                Text(note.summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: 8) {
                 Image(systemName: note.verdict.systemImage)
                     .foregroundStyle(note.verdict.tint)
-                Text(note.date, format: .relative(presentation: .named))
                 if itemCount > 0 { Label("\(itemCount)", systemImage: "checklist") }
                 if openCount > 0 { Label("\(openCount)", systemImage: "questionmark.circle") }
+                Spacer(minLength: 0)
             }
-            .font(.caption)
+            .font(.caption2)
             .foregroundStyle(.secondary)
+            .padding(.top, 2)
         }
-        .padding(.vertical, 2)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Self.shape.fill(Color.primary.opacity(0.055)))
+        .overlay(Self.shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
+        .contentShape(Self.shape)
     }
 }
