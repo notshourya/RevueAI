@@ -131,16 +131,16 @@ struct DateRulerView: View {
         .scrollPosition(id: $selectedIndex, anchor: .center)
         .scrollTargetBehavior(.viewAligned)
         .contentMargins(.horizontal, 130, for: .scrollContent)
-        .frame(height: 58)
+        .frame(height: 72)
         .overlay {
             // Fixed center pointer under the readout.
             VStack(spacing: 0) {
                 Triangle()
                     .fill(Color.primary.opacity(0.85))
-                    .frame(width: 9, height: 5)
+                    .frame(width: 10, height: 6)
                 Rectangle()
                     .fill(Color.primary.opacity(0.85))
-                    .frame(width: 2, height: 34)
+                    .frame(width: 2, height: 42)
                 Spacer(minLength: 0)
             }
             .allowsHitTesting(false)
@@ -188,8 +188,8 @@ private struct RulerTick: View {
                       : Color.secondary.opacity(isFirstOfMonth ? 0.8
                                                 : isWeekStart ? 0.6
                                                 : isWeekend ? 0.22 : 0.4))
-                .frame(width: isFirstOfMonth ? 2.5 : 2,
-                       height: isFirstOfMonth ? 26 : isWeekStart ? 20 : 13)
+                .frame(width: isFirstOfMonth ? 3 : 2,
+                       height: isFirstOfMonth ? 32 : isWeekStart ? 25 : 17)
             // Every day carries its numeral; month starts show the month
             // (plus the year at January) so the scale reads at a glance.
             Group {
@@ -204,14 +204,14 @@ private struct RulerTick: View {
                         .fontWeight(isToday ? .bold : .regular)
                 }
             }
-            .font(.system(size: 8, design: .monospaced))
+            .font(.system(size: 10.5, design: .monospaced))
             .foregroundStyle(isToday ? AnyShapeStyle(.red)
                              : isFirstOfMonth ? AnyShapeStyle(.secondary)
                              : isWeekend ? AnyShapeStyle(.quaternary)
                              : AnyShapeStyle(.tertiary))
             .fixedSize()
         }
-        .frame(width: 18, height: 58, alignment: .top)
+        .frame(width: 24, height: 72, alignment: .top)
     }
 }
 
