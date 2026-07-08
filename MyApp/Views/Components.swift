@@ -29,11 +29,11 @@ enum Theme {
     static let cardRadius: CGFloat = 10
 
     static func rounded(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+        .system(size: size, weight: weight, design: .rounded)
     }
     /// Back-compat alias used around the app.
     static func display(_ size: CGFloat, _ weight: Font.Weight = .bold) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+        .system(size: size, weight: weight, design: .rounded)
     }
 }
 
@@ -112,7 +112,7 @@ struct PriorityBadge: View {
     let priority: ActionPriority
     var body: some View {
         Text(priority.displayName.uppercased())
-            .font(.system(size: 9, weight: .heavy, design: .monospaced))
+            .font(.system(size: 9, weight: .heavy, design: .rounded))
             .tracking(0.6)
             .padding(.horizontal, 7).padding(.vertical, 3)
             .background(priority.tint.opacity(0.16), in: Capsule())

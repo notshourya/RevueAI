@@ -49,7 +49,7 @@ struct ReviewBoard: View {
     private var selectionBar: some View {
         HStack(spacing: 12) {
             Text("\(selection.count) selected")
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
             Spacer()
             Button("Complete") { apply(Array(selection), done: true) }
             Button("Reopen") { apply(Array(selection), done: false) }
@@ -57,7 +57,7 @@ struct ReviewBoard: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
-        .font(.system(size: 11, weight: .medium, design: .monospaced))
+        .font(.system(size: 11, weight: .medium, design: .rounded))
         .padding(.horizontal, 12).padding(.vertical, 7)
         .glassEffect(.regular.tint(Theme.accent.opacity(0.10)), in: .capsule)
         .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.22), lineWidth: 1))
@@ -172,14 +172,14 @@ private struct BoardColumn<Content: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 Image(systemName: systemImage).font(.system(size: 11, weight: .semibold)).foregroundStyle(accent)
-                Text(title).font(.system(size: 13, weight: .bold, design: .monospaced))
-                Text("\(count)").font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(.tertiary)
+                Text(title).font(.system(size: 13, weight: .bold, design: .rounded))
+                Text("\(count)").font(.system(size: 11, weight: .bold, design: .rounded)).foregroundStyle(.tertiary)
                 Spacer()
             }
 
             if isEmpty {
                 Text(emptyText)
-                    .font(.system(size: 11, design: .monospaced))
+                    .font(.system(size: 11, design: .rounded))
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 10)
@@ -240,13 +240,13 @@ private struct QuestionRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(question.text)
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
                     .strikethrough(question.isResolved)
                     .foregroundStyle(question.isResolved ? .secondary : .primary)
                     .fixedSize(horizontal: false, vertical: true)
                 if !question.attribution.isEmpty {
                     Text(question.attribution)
-                        .font(.system(size: 10, design: .monospaced))
+                        .font(.system(size: 10, design: .rounded))
                         .foregroundStyle(.tertiary)
                 }
             }

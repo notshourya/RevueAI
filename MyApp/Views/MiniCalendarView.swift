@@ -82,9 +82,12 @@ struct DateRulerView: View {
                 showAgenda = true
             } label: {
                 VStack(spacing: 0) {
-                    Text(selectedDay, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
+                    (Text(selectedDay, format: .dateTime.weekday(.abbreviated).month(.abbreviated))
+                        .foregroundStyle(.primary)
+                     + Text(" ")
+                     + Text(selectedDay, format: .dateTime.day())
+                        .foregroundStyle(.red))
                         .font(.system(size: 24, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.red)
                         .contentTransition(.numericText())
                         .animation(.smooth(duration: 0.2), value: selectedDay)
                     Image(systemName: "chevron.compact.down")

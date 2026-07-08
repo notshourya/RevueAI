@@ -34,18 +34,18 @@ struct NoteDetailView: View {
             HStack(spacing: 8) {
                 VerdictBadge(verdict: note.verdict)
                 Text(note.date.formatted(date: .abbreviated, time: .shortened))
-                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundStyle(.tertiary)
                 if note.durationSeconds > 0 {
                     Text("· \(durationText)")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundStyle(.tertiary)
                 }
                 Spacer()
             }
             TextField("Title", text: $note.title, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 26, weight: .bold, design: .monospaced))
+                .font(.system(size: 26, weight: .bold, design: .rounded))
         }
     }
 
@@ -59,7 +59,7 @@ struct NoteDetailView: View {
         HStack(spacing: 10) {
             StateOrb(mode: .processing, size: 28)
             Text("Summarizing your review…")
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .font(.system(size: 13, weight: .medium, design: .rounded))
                 .foregroundStyle(.secondary)
         }
     }
@@ -71,10 +71,10 @@ struct NoteDetailView: View {
         if !note.summary.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 Label("Summary", systemImage: "text.alignleft")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(.secondary)
                 Text(note.summary)
-                    .font(.system(size: 13, design: .monospaced))
+                    .font(.system(size: 13, design: .rounded))
                     .lineSpacing(3)
                     .foregroundStyle(.primary.opacity(0.9))
                     .textSelection(.enabled)
@@ -95,7 +95,7 @@ struct NoteDetailView: View {
         if !decisions.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 Label("Decisions", systemImage: "checkmark.seal")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(.secondary)
                 ForEach(decisions) { decision in
                     DecisionRow(decision: decision)

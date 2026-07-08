@@ -32,17 +32,21 @@ struct LibraryPane: View {
                 filterChip(for: filterDay)
                     .padding(.top, 10)
             }
-            HStack(alignment: .top, spacing: 10) {
+            // Siri-style sizing: columns grow with the sidebar but cap out,
+            // so cards get proportionally larger instead of stretching.
+            HStack(alignment: .top, spacing: 12) {
                 ForEach(0..<2, id: \.self) { column in
-                    LazyVStack(spacing: 10) {
+                    LazyVStack(spacing: 12) {
                         ForEach(distributed(into: 2)[column]) { note in
                             ReviewCard(note: note, isSelected: selection == note)
                                 .onTapGesture { selection = note }
                                 .contextMenu { rowMenu(note) }
                         }
                     }
+                    .frame(maxWidth: 250)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(12)
         }
         .scrollEdgeEffectStyle(.soft, for: .all)
@@ -213,7 +217,7 @@ private struct ReviewCard: View {
 
     private var itemCount: Int { note.actionItems?.count ?? 0 }
     private var openCount: Int { (note.openQuestions ?? []).filter { !$0.isResolved }.count }
-    private static let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
+    private static let shape = RoundedRectangle(cornerRadius: 30, style: .continuous)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -242,7 +246,7 @@ private struct ReviewCard: View {
             .foregroundStyle(.secondary)
             .padding(.top, 2)
         }
-        .padding(16)
+        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassEffect(.clear.tint(glassTint), in: Self.shape)
         .overlay(Self.shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
