@@ -44,6 +44,27 @@ struct AppBackground: View {
     }
 }
 
+/// The app's standard content card: adaptive-tint liquid glass matching the
+/// sidebar's review tiles (deep in dark mode, bright in light mode).
+struct ContentCardModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+    var radius: CGFloat = 26
+
+    func body(content: Content) -> some View {
+        content.glassEffect(
+            .clear.tint(colorScheme == .dark ? .black.opacity(0.33) : .white.opacity(0.35)),
+            in: .rect(cornerRadius: radius)
+        )
+    }
+}
+
+extension View {
+    /// Applies the app's adaptive glass card surface.
+    func contentCard(radius: CGFloat = 26) -> some View {
+        modifier(ContentCardModifier(radius: radius))
+    }
+}
+
 /// Kept as the app-wide background name used across screens.
 struct PremiumBackground: View {
     var body: some View { AppBackground() }

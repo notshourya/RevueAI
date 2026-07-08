@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 import AppKit
 
-/// A dense, compact reading view: a slim header, a tight summary strip, and a
-/// parallel board (To Do · Completed · Questions).
+/// The reading view: a hero header with stat chips, summary and decision
+/// cards in the app's adaptive glass, and the parallel board below.
 struct NoteDetailView: View {
     @Bindable var note: ReviewNote
 
@@ -26,11 +26,10 @@ struct NoteDetailView: View {
         .background { PremiumBackground() }
     }
 
-
     // MARK: - Header
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 VerdictBadge(verdict: note.verdict)
                 Text(note.date.formatted(date: .abbreviated, time: .shortened))
@@ -45,8 +44,36 @@ struct NoteDetailView: View {
             }
             TextField("Title", text: $note.title, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
+            statChips
         }
+    }
+
+    /// At-a-glance chips: open, done, questions.
+    private var statChips: some View {
+        let open = note.sortedActionItems.filter { !$0.isDone }.count
+        let done = note.sortedActionItems.count - open
+        let questions = note.sortedOpenQuestions.filter { !$0.isResolved }.count
+        return HStack(spacing: 8) {
+            statChip("\(open) open", systemImage: "circle.dashed", tint: .secondary)
+            if done > 0 {
+                statChip("\(done) done", systemImage: "checkmark.circle.fill", tint: Theme.success)
+            }
+            if questions > 0 {
+                statChip("\(questions) question\(questions == 1 ? "" : "s")",
+                         systemImage: "questionmark.circle", tint: Theme.warning)
+            }
+            Spacer()
+        }
+    }
+
+    private func statChip(_ text: String, systemImage: String, tint: Color) -> some View {
+        Label(text, systemImage: systemImage)
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .glassEffect(.regular, in: .capsule)
     }
 
     private var durationText: String {
@@ -69,23 +96,20 @@ struct NoteDetailView: View {
     @ViewBuilder
     private var summaryStrip: some View {
         if !note.summary.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Summary", systemImage: "text.alignleft")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 8) {
+                Label("SUMMARY", systemImage: "text.alignleft")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .kerning(0.8)
                     .foregroundStyle(.secondary)
                 Text(note.summary)
-                    .font(.system(size: 13, design: .rounded))
-                    .lineSpacing(3)
-                    .foregroundStyle(.primary.opacity(0.9))
+                    .font(.system(size: 14, design: .rounded))
+                    .lineSpacing(4)
+                    .foregroundStyle(.primary.opacity(0.92))
                     .textSelection(.enabled)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                    .strokeBorder(Theme.panelStroke, lineWidth: 1)
-            )
+            .padding(18)
+            .contentCard()
         }
     }
 
@@ -93,21 +117,18 @@ struct NoteDetailView: View {
     private var decisionsStrip: some View {
         let decisions = note.sortedDecisions
         if !decisions.isEmpty {
-            VStack(alignment: .leading, spacing: 6) {
-                Label("Decisions", systemImage: "checkmark.seal")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
+            VStack(alignment: .leading, spacing: 10) {
+                Label("DECISIONS", systemImage: "checkmark.seal")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .kerning(0.8)
                     .foregroundStyle(.secondary)
                 ForEach(decisions) { decision in
                     DecisionRow(decision: decision)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .glassEffect(.regular.tint(Theme.panel.opacity(0.22)), in: .rect(cornerRadius: Theme.cardRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                    .strokeBorder(Theme.panelStroke, lineWidth: 1)
-            )
+            .padding(18)
+            .contentCard()
         }
     }
 }
@@ -118,12 +139,14 @@ private struct DecisionRow: View {
     @State private var showDetail = false
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text("•")
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(Theme.success.opacity(0.85))
             Text(decision.statement)
+                .font(.system(size: 13.5, design: .rounded))
         }
-        .font(Theme.rounded(13))
-        .foregroundStyle(.primary.opacity(0.9))
+        .foregroundStyle(.primary.opacity(0.92))
         .contentShape(Rectangle())
         .onTapGesture { showDetail = true }
         .popover(isPresented: $showDetail, arrowEdge: .trailing) {
