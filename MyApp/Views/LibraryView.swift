@@ -27,27 +27,33 @@ struct LibraryPane: View {
     }
 
     var body: some View {
-        ScrollView {
-            if let filterDay {
-                filterChip(for: filterDay)
-                    .padding(.top, 10)
-            }
-            // Siri-style sizing: columns grow with the sidebar but cap out,
-            // so cards get proportionally larger instead of stretching.
-            HStack(alignment: .top, spacing: 12) {
-                ForEach(0..<2, id: \.self) { column in
-                    LazyVStack(spacing: 12) {
-                        ForEach(distributed(into: 2)[column]) { note in
-                            ReviewCard(note: note, isSelected: selection == note)
-                                .onTapGesture { selection = note }
-                                .contextMenu { rowMenu(note) }
+        GeometryReader { geo in
+            // Siri-style sizing: the card DESIGN scales with the column —
+            // type, padding, and radius grow together like a zoom, instead
+            // of the text just re-wrapping wider.
+            let columnWidth = (geo.size.width - 24 - 12) / 2
+            let cardScale = min(max(columnWidth / 220, 0.9), 1.7)
+            ScrollView {
+                if let filterDay {
+                    filterChip(for: filterDay)
+                        .padding(.top, 10)
+                }
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(0..<2, id: \.self) { column in
+                        LazyVStack(spacing: 12) {
+                            ForEach(distributed(into: 2)[column]) { note in
+                                ReviewCard(note: note,
+                                           isSelected: selection == note,
+                                           scale: cardScale)
+                                    .onTapGesture { selection = note }
+                                    .contextMenu { rowMenu(note) }
+                            }
                         }
                     }
-                    .frame(maxWidth: 250)
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(12)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(12)
         }
         .scrollEdgeEffectStyle(.soft, for: .all)
         .navigationTitle(showArchived ? "Archived" : "Reviews")
@@ -207,6 +213,8 @@ struct LibraryPane: View {
 private struct ReviewCard: View {
     let note: ReviewNote
     var isSelected = false
+    /// Uniform design scale: type, padding, and radius grow together.
+    var scale: CGFloat = 1
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -217,39 +225,41 @@ private struct ReviewCard: View {
 
     private var itemCount: Int { note.actionItems?.count ?? 0 }
     private var openCount: Int { (note.openQuestions ?? []).filter { !$0.isResolved }.count }
-    private static let shape = RoundedRectangle(cornerRadius: 30, style: .continuous)
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 30 * scale, style: .continuous)
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 6 * scale) {
             Text(note.date, format: .relative(presentation: .named))
-                .font(.caption)
+                .font(.system(size: 11 * scale))
                 .foregroundStyle(.secondary)
             Text(note.title.isEmpty ? "Untitled review" : note.title)
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: 15 * scale, weight: .bold))
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
             if !note.summary.isEmpty {
                 Text(note.summary)
-                    .font(.caption)
+                    .font(.system(size: 11.5 * scale))
                     .foregroundStyle(.secondary)
                     .lineLimit(4)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            HStack(spacing: 8) {
+            HStack(spacing: 8 * scale) {
                 Image(systemName: note.verdict.systemImage)
                     .foregroundStyle(note.verdict.tint)
                 if itemCount > 0 { Label("\(itemCount)", systemImage: "checklist") }
                 if openCount > 0 { Label("\(openCount)", systemImage: "questionmark.circle") }
                 Spacer(minLength: 0)
             }
-            .font(.caption2)
+            .font(.system(size: 10.5 * scale))
             .foregroundStyle(.secondary)
-            .padding(.top, 2)
+            .padding(.top, 2 * scale)
         }
-        .padding(18)
+        .padding(18 * scale)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.clear.tint(glassTint), in: Self.shape)
-        .overlay(Self.shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
-        .contentShape(Self.shape)
+        .glassEffect(.clear.tint(glassTint), in: shape)
+        .overlay(shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
+        .contentShape(shape)
     }
 }

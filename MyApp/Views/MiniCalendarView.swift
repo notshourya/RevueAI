@@ -173,36 +173,45 @@ private struct RulerTick: View {
 
     private var dayOfMonth: Int { Calendar.current.component(.day, from: day) }
     private var isFirstOfMonth: Bool { dayOfMonth == 1 }
+    private var isFirstOfYear: Bool { isFirstOfMonth && Calendar.current.component(.month, from: day) == 1 }
     private var isWeekStart: Bool { Calendar.current.component(.weekday, from: day) == Calendar.current.firstWeekday }
+    private var isWeekend: Bool { Calendar.current.isDateInWeekend(day) }
     private var isToday: Bool { Calendar.current.isDateInToday(day) }
-    /// Numbered like an instrument scale: every fifth day carries its numeral.
-    private var showsNumeral: Bool { dayOfMonth % 5 == 0 && !isFirstOfMonth }
 
     var body: some View {
         VStack(spacing: 2) {
             Circle()
                 .fill(hasNotes ? Color.accentColor : .clear)
-                .frame(width: 3.5, height: 3.5)
+                .frame(width: 4, height: 4)
             RoundedRectangle(cornerRadius: 1)
                 .fill(isToday ? Color.red.opacity(0.9)
-                      : Color.secondary.opacity(isFirstOfMonth ? 0.8 : isWeekStart ? 0.6 : 0.35))
+                      : Color.secondary.opacity(isFirstOfMonth ? 0.8
+                                                : isWeekStart ? 0.6
+                                                : isWeekend ? 0.22 : 0.4))
                 .frame(width: isFirstOfMonth ? 2.5 : 2,
                        height: isFirstOfMonth ? 26 : isWeekStart ? 20 : 13)
+            // Every day carries its numeral; month starts show the month
+            // (plus the year at January) so the scale reads at a glance.
             Group {
-                if isFirstOfMonth {
+                if isFirstOfYear {
+                    Text(day, format: .dateTime.month(.abbreviated).year(.twoDigits))
+                        .fontWeight(.semibold)
+                } else if isFirstOfMonth {
                     Text(day, format: .dateTime.month(.abbreviated))
                         .fontWeight(.semibold)
-                } else if showsNumeral {
-                    Text("\(dayOfMonth)")
                 } else {
-                    Text(" ")
+                    Text("\(dayOfMonth)")
+                        .fontWeight(isToday ? .bold : .regular)
                 }
             }
             .font(.system(size: 8, design: .monospaced))
-            .foregroundStyle(isFirstOfMonth ? .secondary : .tertiary)
+            .foregroundStyle(isToday ? AnyShapeStyle(.red)
+                             : isFirstOfMonth ? AnyShapeStyle(.secondary)
+                             : isWeekend ? AnyShapeStyle(.quaternary)
+                             : AnyShapeStyle(.tertiary))
             .fixedSize()
         }
-        .frame(width: 12, height: 58, alignment: .top)
+        .frame(width: 18, height: 58, alignment: .top)
     }
 }
 
