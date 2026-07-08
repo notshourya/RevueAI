@@ -55,25 +55,19 @@ struct RootShellView: View {
         }
         .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
         .background(ToolbarSearchCenterer(trigger: columnVisibility))
+        .toolbar {
+            // Declared after .searchable so these land right of the search
+            // item: the flexible spacer pushes the export menu to the corner.
+            DefaultToolbarItem(kind: .search)
+            ToolbarSpacer(.flexible)
+            ToolbarItem(placement: .primaryAction) {
+                exportMenu
+            }
+        }
         .onSubmit(of: .search) {
             let text = assistantQuery
             assistantQuery = ""
             submitAssistantQuery(text)
-        }
-        .overlay(alignment: .top) {
-            if showAssistant {
-                AssistantResultsCard(assistant: assistant,
-                                     suggestions: Self.assistantSuggestions,
-                                     showsField: false,
-                                     onAsk: { submitAssistantQuery($0) },
-                                     onOpenNote: { noteID in
-                                         withAnimation(.smooth) { showAssistant = false }
-                                         openNote(id: noteID)
-                                     },
-                                     onClose: {
-                                         withAnimation(.smooth) { showAssistant = false }
-                                     })
-            }
         }
         .onChange(of: coordinator.state) { _, newValue in
             floatingOrb.update(state: newValue, enabled: floatingOrbEnabled, coordinator: coordinator)
@@ -183,9 +177,50 @@ struct RootShellView: View {
         Task { await coordinator.start(context: context, meeting: meeting) }
     }
 
+    /// Copy/share pulldown for the selected review — far right of the toolbar.
+    private var exportMenu: some View {
+        Menu {
+            Section("Export") {
+                Button {
+                    guard let selection else { return }
+                    let pasteboard = NSPasteboard.general
+                    pasteboard.clearContents()
+                    pasteboard.setString(MarkdownExporter.markdown(for: selection), forType: .string)
+                } label: {
+                    Label("Copy Markdown", systemImage: "doc.on.doc")
+                        .labelStyle(.titleAndIcon)
+                }
+                if let selection, let url = try? MarkdownExporter.temporaryFileURL(for: selection) {
+                    ShareLink(item: url) {
+                        Label("Share…", systemImage: "square.and.arrow.up")
+                    }
+                }
+            }
+        } label: {
+            Label("Export", systemImage: "square.and.arrow.up")
+        }
+        .disabled(selection == nil || showCalendarSurface)
+        .help("Copy or share this review")
+    }
+
     @ViewBuilder
     private var readerContent: some View {
         readerBody
+            .overlay(alignment: .top) {
+                if showAssistant {
+                    AssistantResultsCard(assistant: assistant,
+                                         suggestions: Self.assistantSuggestions,
+                                         showsField: false,
+                                         onAsk: { submitAssistantQuery($0) },
+                                         onOpenNote: { noteID in
+                                             withAnimation(.smooth) { showAssistant = false }
+                                             openNote(id: noteID)
+                                         },
+                                         onClose: {
+                                             withAnimation(.smooth) { showAssistant = false }
+                                         })
+                }
+            }
             .background {
                 SearchActivationBridge { active in
                     guard active else { return }

@@ -24,37 +24,8 @@ struct NoteDetailView: View {
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
         .background { PremiumBackground() }
-        .toolbar { exportToolbar }
     }
 
-    // MARK: - Toolbar
-
-    @ToolbarContentBuilder
-    private var exportToolbar: some ToolbarContent {
-        ToolbarSpacer(.flexible)
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                Section("Export") {
-                    Button {
-                        let pasteboard = NSPasteboard.general
-                        pasteboard.clearContents()
-                        pasteboard.setString(MarkdownExporter.markdown(for: note), forType: .string)
-                    } label: {
-                        Label("Copy Markdown", systemImage: "doc.on.doc")
-                            .labelStyle(.titleAndIcon)
-                    }
-                    if let url = try? MarkdownExporter.temporaryFileURL(for: note) {
-                        ShareLink(item: url) {
-                            Label("Share…", systemImage: "square.and.arrow.up")
-                        }
-                    }
-                }
-            } label: {
-                Label("Export", systemImage: "square.and.arrow.up")
-            }
-            .help("Copy or share this review")
-        }
-    }
 
     // MARK: - Header
 
