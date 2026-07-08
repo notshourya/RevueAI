@@ -27,6 +27,9 @@ struct RootShellView: View {
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @State private var floatingOrb = FloatingOrbController()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("hasSeenMainTour") private var hasSeenMainTour = false
+    @AppStorage("hasSeenBoardTour") private var hasSeenBoardTour = false
+    @State private var tour = TourController()
     @Environment(\.openWindow) private var openWindow
     @State private var showOnboarding = false
     @State private var notifier = ArmedMeetingNotifier()
@@ -86,17 +89,42 @@ struct RootShellView: View {
             floatingOrb.update(state: coordinator.state, enabled: enabled, coordinator: coordinator)
         }
         .onAppear {
-            if !hasCompletedOnboarding { showOnboarding = true }
+            if !hasCompletedOnboarding {
+                showOnboarding = true
+            } else {
+                startMainTourIfNeeded()
+            }
         }
         .onChange(of: hasCompletedOnboarding) { _, completed in
             if !completed { showOnboarding = true }
         }
-        .sheet(isPresented: $showOnboarding, onDismiss: { hasCompletedOnboarding = true }) {
+        .sheet(isPresented: $showOnboarding, onDismiss: {
+            hasCompletedOnboarding = true
+            startMainTourIfNeeded()
+        }) {
             OnboardingSheet(isPresented: $showOnboarding) {
                 Task { await coordinator.start(context: context) }
             }
         }
+        .onChange(of: selection) { _, note in
+            guard let note, !tour.isActive,
+                  TourScript.shouldRunBoardTour(itemCount: note.actionItems?.count ?? 0,
+                                                hasSeenBoardTour: hasSeenBoardTour) else { return }
+            let noteID = note.id
+            // Give the reader a beat to lay out before spotlighting it.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                guard selection?.id == noteID, !tour.isActive else { return }
+                withAnimation(.smooth) {
+                    tour.begin(TourScript.act2) { hasSeenBoardTour = true }
+                }
+            }
+        }
         .overlay(alignment: .bottom) { promptCard }
+        .tourOverlay(controller: tour) { stopID in
+            if stopID == "capture" {
+                Task { await coordinator.start(context: context) }
+            }
+        }
         .task {
             notifier.activate(context: context)
             notifier.onStartRequested = { planned in
@@ -168,6 +196,13 @@ struct RootShellView: View {
         descriptor.fetchLimit = 1
         guard let note = try? context.fetch(descriptor).first else { return }
         withAnimation(.smooth) { selection = note }
+    }
+
+    private func startMainTourIfNeeded() {
+        guard !hasSeenMainTour, !tour.isActive else { return }
+        withAnimation(.smooth) {
+            tour.begin(TourScript.act1) { hasSeenMainTour = true }
+        }
     }
 
     private func startFromPlanned(_ planned: PlannedCapture) {

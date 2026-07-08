@@ -4,6 +4,8 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("hasSeenMainTour") private var hasSeenMainTour = false
+    @AppStorage("hasSeenBoardTour") private var hasSeenBoardTour = false
 
     var body: some View {
         Form {
@@ -13,6 +15,8 @@ struct SettingsView: View {
             Section("Help") {
                 Button("Show Welcome Tour") {
                     hasCompletedOnboarding = false
+                    hasSeenMainTour = false
+                    hasSeenBoardTour = false
                     NSApplication.shared.activate(ignoringOtherApps: true)
                 }
                 Text("The tour reopens in the main window.")

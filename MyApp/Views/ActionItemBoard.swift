@@ -32,6 +32,7 @@ struct ReviewBoard: View {
                 actionColumn("To Do", systemImage: "circle.dashed",
                              items: openItems, markCompleted: false,
                              emptyText: "No open items.", showsAddRow: true)
+                    .tourAnchor("board-todo")
                 actionColumn("Completed", systemImage: "checkmark.circle.fill",
                              items: doneItems, markCompleted: true,
                              emptyText: "Drag items here.")
@@ -78,6 +79,7 @@ struct ReviewBoard: View {
                               onToggleSelect: { toggleSelect(item.id) },
                               showDetailOnAppear: item.id == newItemID)
                     .draggable(containerItemID: item.id)
+                    .tourAnchor(item.id == items.first?.id ? "action-item" : nil)
                     .contextMenu {
                         Button(item.isDone ? "Reopen" : "Mark complete") { apply([item.id], done: !item.isDone) }
                         Button(selection.contains(item.id) ? "Deselect" : "Select") { toggleSelect(item.id) }

@@ -121,6 +121,7 @@ struct LibraryPane: View {
                       filterDay: $filterDay,
                       onOpenNote: { selection = $0 },
                       onArmChanged: onArmChanged)
+            .tourAnchor("date-ruler")
             .padding(.horizontal, 12)
             .padding(.bottom, 10)
             .padding(.top, 4)
