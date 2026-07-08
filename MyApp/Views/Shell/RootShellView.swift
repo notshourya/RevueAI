@@ -278,14 +278,26 @@ struct RootShellView: View {
         @discardableResult
         static func centerSearchItem(in window: NSWindow?) -> Bool {
             guard let toolbar = window?.toolbar else { return false }
+            dump(toolbar, phase: "before")
+            defer { dump(toolbar, phase: "after") }
+
             // The export menu must sit in the trailing corner, i.e. after
             // the search item — an ordering SwiftUI cannot express (it
-            // always appends search last). Move the menu item to the end.
-            if let menuIndex = toolbar.items.firstIndex(where: { $0 is NSMenuToolbarItem }),
-               menuIndex != toolbar.items.count - 1 {
-                let identifier = toolbar.items[menuIndex].itemIdentifier
-                toolbar.removeItem(at: menuIndex)
-                toolbar.insertItem(withItemIdentifier: identifier, at: toolbar.items.count)
+            // always appends search last). The export item is whatever
+            // non-space item sits directly before the search field.
+            let isSearch: (NSToolbarItem) -> Bool = {
+                $0 is NSSearchToolbarItem || $0.view?.firstSubview(of: NSSearchField.self) != nil
+            }
+            if let searchIndex = toolbar.items.firstIndex(where: isSearch),
+               searchIndex == toolbar.items.count - 1, searchIndex > 0 {
+                let candidate = toolbar.items[searchIndex - 1]
+                let spaces: Set<NSToolbarItem.Identifier> = [.flexibleSpace, .space]
+                if !(candidate is NSTrackingSeparatorToolbarItem),
+                   !spaces.contains(candidate.itemIdentifier) {
+                    let identifier = candidate.itemIdentifier
+                    toolbar.removeItem(at: searchIndex - 1)
+                    toolbar.insertItem(withItemIdentifier: identifier, at: toolbar.items.count)
+                }
             }
             // Note: do NOT remove the sidebar tracking separators — they are
             // structural, and dropping them scrambles the section layout.
@@ -299,6 +311,25 @@ struct RootShellView: View {
                 toolbar.centeredItemIdentifiers = [identifier]
             }
             return true
+        }
+
+        /// Temporary diagnostics: dumps the toolbar's real item list so the
+        /// exact identifiers/classes can be inspected from the container.
+        private static func dump(_ toolbar: NSToolbar, phase: String) {
+            let lines = toolbar.items.enumerated().map { index, item in
+                "\(index): \(item.itemIdentifier.rawValue) [\(type(of: item))]"
+            }
+            let text = "=== \(phase) \(Date.now.formatted(date: .omitted, time: .standard)) ===\n"
+                + lines.joined(separator: "\n") + "\n"
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("toolbar-diagnostics.txt")
+            if let handle = try? FileHandle(forWritingTo: url) {
+                handle.seekToEndOfFile()
+                handle.write(Data(text.utf8))
+                try? handle.close()
+            } else {
+                try? Data(text.utf8).write(to: url)
+            }
         }
     }
 
