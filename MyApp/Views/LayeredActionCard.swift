@@ -45,18 +45,15 @@ struct ActionRow: View {
                 .foregroundStyle(.tertiary)
                 .padding(.top, 3)
         }
-        .padding(10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .contentShape(Rectangle())
         .onTapGesture { showDetail = true }
         .popover(isPresented: $showDetail, arrowEdge: .trailing) {
             ActionItemDetail(item: item)
         }
         .onAppear { if showDetailOnAppear { showDetail = true } }
-        .glassEffect(isSelected ? .regular.tint(Theme.accent.opacity(0.20)) : .regular.tint(Theme.panel.opacity(0.18)), in: .rect(cornerRadius: Theme.cardRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .strokeBorder(isSelected ? Theme.accent : .clear, lineWidth: 1.5)
-        )
+        .background(isSelected ? Theme.accent.opacity(0.15) : Color.clear)
         .opacity(item.isDone ? 0.75 : 1)
         .help("Show details")
     }

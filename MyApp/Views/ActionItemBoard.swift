@@ -73,18 +73,24 @@ struct ReviewBoard: View {
                     dropAction: { ids in apply(ids, done: markCompleted) },
                     footer: showsAddRow ? AnyView(addItemRow) : nil) {
             ForEach(items) { item in
-                ActionRow(item: item, isSelected: selection.contains(item.id),
-                          onToggleSelect: { toggleSelect(item.id) },
-                          showDetailOnAppear: item.id == newItemID)
-                .draggable(containerItemID: item.id)
-                .contextMenu {
-                    Button(item.isDone ? "Reopen" : "Mark complete") { apply([item.id], done: !item.isDone) }
-                    Button(selection.contains(item.id) ? "Deselect" : "Select") { toggleSelect(item.id) }
-                    Divider()
-                    Button("Move up") { move(item, within: items, by: -1) }
-                        .disabled(items.first?.id == item.id)
-                    Button("Move down") { move(item, within: items, by: 1) }
-                        .disabled(items.last?.id == item.id)
+                VStack(spacing: 0) {
+                    ActionRow(item: item, isSelected: selection.contains(item.id),
+                              onToggleSelect: { toggleSelect(item.id) },
+                              showDetailOnAppear: item.id == newItemID)
+                    .draggable(containerItemID: item.id)
+                    .contextMenu {
+                        Button(item.isDone ? "Reopen" : "Mark complete") { apply([item.id], done: !item.isDone) }
+                        Button(selection.contains(item.id) ? "Deselect" : "Select") { toggleSelect(item.id) }
+                        Divider()
+                        Button("Move up") { move(item, within: items, by: -1) }
+                            .disabled(items.first?.id == item.id)
+                        Button("Move down") { move(item, within: items, by: 1) }
+                            .disabled(items.last?.id == item.id)
+                    }
+                    
+                    if item.id != items.last?.id {
+                        Divider().padding(.leading, 32)
+                    }
                 }
             }
         }
@@ -129,7 +135,13 @@ struct ReviewBoard: View {
                     accent: .secondary, isEmpty: questions.isEmpty, emptyText: "No open questions.",
                     dropAction: nil) {
             ForEach(questions) { question in
-                QuestionRow(question: question)
+                VStack(spacing: 0) {
+                    QuestionRow(question: question)
+                    
+                    if question.id != questions.last?.id {
+                        Divider().padding(.leading, 32)
+                    }
+                }
             }
         }
     }
@@ -169,45 +181,50 @@ private struct BoardColumn<Content: View>: View {
     @State private var isTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 7) {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(accent)
-                    .frame(width: 22, height: 22)
-                    .glassEffect(.regular, in: Circle())
                 Text(title.uppercased())
-                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
                     .kerning(0.8)
-                    .foregroundStyle(.secondary)
-                Text("\(count)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .glassEffect(.regular, in: .capsule)
-                Spacer()
-            }
-
-            if isEmpty {
-                Text(emptyText)
-                    .font(.system(size: 11, design: .rounded))
                     .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 10)
-            } else {
-                VStack(spacing: 8) { content }
+                Spacer()
+                Text("\(count)")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.tertiary)
             }
-            if let footer { footer }
+            .padding(.bottom, 6)
+
+            VStack(spacing: 0) {
+                if isEmpty {
+                    Text(emptyText)
+                        .font(.system(size: 13, design: .rounded))
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(14)
+                } else {
+                    content
+                }
+
+                if let footer {
+                    Divider().opacity(0.5)
+                    footer
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .glassEffect(.regular, in: .rect(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(isTargeted ? Color.accentColor : .clear,
+                                  style: StrokeStyle(lineWidth: 1.5, dash: isTargeted ? [5] : []))
+            )
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .padding(14)
-        .contentCard(radius: 24)
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(isTargeted ? Color.accentColor : .clear,
-                              style: StrokeStyle(lineWidth: 1.5, dash: isTargeted ? [5] : []))
-        )
+        .padding(.horizontal, 4)
         .animation(.smooth(duration: 0.2), value: isTargeted)
         .modifier(DropIfNeeded(dropAction: dropAction, isTargeted: $isTargeted))
     }
@@ -266,12 +283,8 @@ private struct QuestionRow: View {
         .popover(isPresented: $showDetail, arrowEdge: .trailing) {
             QuestionDetail(question: question)
         }
-        .padding(10)
-        .glassEffect(.regular.tint(Theme.panel.opacity(0.20)), in: .rect(cornerRadius: Theme.cardRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: Theme.cardRadius, style: .continuous)
-                .strokeBorder(Theme.panelStroke, lineWidth: 1)
-        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .opacity(question.isResolved ? 0.75 : 1)
     }
 }

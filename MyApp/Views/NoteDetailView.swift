@@ -2,14 +2,16 @@ import SwiftUI
 import SwiftData
 import AppKit
 
-/// The reading view: a hero header with stat chips, summary and decision
-/// cards in the app's adaptive glass, and the parallel board below.
+/// The reading view: an immersive, open-page layout — no card boxes. A soft
+/// verdict-tinted ambience sits behind the hero; summary and decisions read
+/// as editorial sections; the board's item rows are the only glass surfaces.
 struct NoteDetailView: View {
     @Bindable var note: ReviewNote
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 20) {
                 header
                 if note.status == .processing { processingRow }
                 summaryStrip
@@ -17,13 +19,24 @@ struct NoteDetailView: View {
                 ReviewBoard(note: note)
                 Color.clear.frame(height: 24)
             }
-            .padding(24)
+            .padding(.horizontal, 32)
+            .padding(.vertical, 28)
             .frame(maxWidth: 1300, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
         }
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
-        .background { PremiumBackground() }
+        .background {
+            ZStack(alignment: .top) {
+                PremiumBackground()
+                RadialGradient(
+                    colors: [note.verdict.tint.opacity(colorScheme == .dark ? 0.14 : 0.09), .clear],
+                    center: .init(x: 0.3, y: 0),
+                    startRadius: 0, endRadius: 640
+                )
+                .ignoresSafeArea()
+            }
+        }
     }
 
     // MARK: - Header
@@ -96,20 +109,19 @@ struct NoteDetailView: View {
     @ViewBuilder
     private var summaryStrip: some View {
         if !note.summary.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Label("SUMMARY", systemImage: "text.alignleft")
-                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
                     .kerning(0.8)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
                 Text(note.summary)
-                    .font(.system(size: 14, design: .rounded))
-                    .lineSpacing(4)
-                    .foregroundStyle(.primary.opacity(0.92))
+                    .font(.system(size: 16, weight: .regular, design: .rounded))
+                    .lineSpacing(6)
+                    .foregroundStyle(.primary.opacity(0.85))
                     .textSelection(.enabled)
+                    .frame(maxWidth: 820, alignment: .leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
-            .contentCard()
         }
     }
 
@@ -117,18 +129,16 @@ struct NoteDetailView: View {
     private var decisionsStrip: some View {
         let decisions = note.sortedDecisions
         if !decisions.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
                 Label("DECISIONS", systemImage: "checkmark.seal")
-                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
                     .kerning(0.8)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.tertiary)
                 ForEach(decisions) { decision in
                     DecisionRow(decision: decision)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(18)
-            .contentCard()
         }
     }
 }
@@ -141,10 +151,10 @@ private struct DecisionRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 11))
+                .font(.system(size: 12))
                 .foregroundStyle(Theme.success.opacity(0.85))
             Text(decision.statement)
-                .font(.system(size: 13.5, design: .rounded))
+                .font(.system(size: 15, design: .rounded))
         }
         .foregroundStyle(.primary.opacity(0.92))
         .contentShape(Rectangle())
