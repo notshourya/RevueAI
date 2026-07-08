@@ -22,6 +22,7 @@ struct RootShellView: View {
     @Environment(CaptureCoordinator.self) private var coordinator
     @Environment(\.modelContext) private var context
     @State private var selection: ReviewNote?
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
     @State private var showCalendarSurface = false
     @State private var calendarModel = CalendarPaneModel(calendar: CalendarService())
     @AppStorage("floatingOrbEnabled") private var floatingOrbEnabled = true
@@ -41,7 +42,7 @@ struct RootShellView: View {
     ]
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             LibraryPane(selection: $selection,
                         calendarModel: calendarModel,
                         onOpenCalendar: { day in
@@ -53,7 +54,7 @@ struct RootShellView: View {
             readerContent
         }
         .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
-        .background(ToolbarSearchCenterer())
+        .background(ToolbarSearchCenterer(trigger: columnVisibility))
         .onSubmit(of: .search) {
             let text = assistantQuery
             assistantQuery = ""
@@ -204,29 +205,40 @@ struct RootShellView: View {
     /// toolbar, locates the bridged search item, and centers it. Retries
     /// briefly because SwiftUI populates the toolbar asynchronously.
     private struct ToolbarSearchCenterer: NSViewRepresentable {
+        /// Re-centering runs on bounded events only (launch + sidebar
+        /// visibility changes) — constant re-poking races the search
+        /// field's remote completion service (ViewBridge asserts in
+        /// SafariPlatformSupport.Helper), but toggling the sidebar rebuilds
+        /// the toolbar items, so a one-shot isn't enough either.
+        var trigger: NavigationSplitViewVisibility
+
         final class Coordinator {
-            var centered = false
+            var lastTrigger: NavigationSplitViewVisibility?
         }
 
         func makeCoordinator() -> Coordinator { Coordinator() }
 
         func makeNSView(context: Context) -> NSView {
             let view = NSView()
-            let coordinator = context.coordinator
-            // Apply once, with a few early retries while SwiftUI populates
-            // the toolbar. No re-poking afterwards: repeated toolbar
-            // mutation races the search field's remote completion service
-            // (ViewBridge asserts in SafariPlatformSupport.Helper).
-            for delay in [0.1, 0.6, 1.5, 3.0] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak view] in
-                    guard let view, !coordinator.centered else { return }
-                    coordinator.centered = Self.centerSearchItem(in: view.window)
-                }
-            }
+            context.coordinator.lastTrigger = trigger
+            schedule(from: view, delays: [0.1, 0.6, 1.5, 3.0])
             return view
         }
 
-        func updateNSView(_ nsView: NSView, context: Context) {}
+        func updateNSView(_ nsView: NSView, context: Context) {
+            guard context.coordinator.lastTrigger != trigger else { return }
+            context.coordinator.lastTrigger = trigger
+            schedule(from: nsView, delays: [0.15, 0.6])
+        }
+
+        private func schedule(from view: NSView, delays: [Double]) {
+            for delay in delays {
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak view] in
+                    guard let view else { return }
+                    Self.centerSearchItem(in: view.window)
+                }
+            }
+        }
 
         @discardableResult
         static func centerSearchItem(in window: NSWindow?) -> Bool {

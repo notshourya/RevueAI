@@ -41,6 +41,7 @@ struct NoteDetailView: View {
                         pasteboard.setString(MarkdownExporter.markdown(for: note), forType: .string)
                     } label: {
                         Label("Copy Markdown", systemImage: "doc.on.doc")
+                            .labelStyle(.titleAndIcon)
                     }
                     if let url = try? MarkdownExporter.temporaryFileURL(for: note) {
                         ShareLink(item: url) {
