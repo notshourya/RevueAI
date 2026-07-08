@@ -122,6 +122,22 @@ struct LibraryPane: View {
                       onArmChanged: onArmChanged)
             .padding(.horizontal, 12)
             .padding(.bottom, 10)
+            .padding(.top, 4)
+            .background {
+                // Progressive blur like the toolbar edge: cards fade out
+                // under the ruler instead of bleeding through its glass.
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .mask(
+                        LinearGradient(stops: [.init(color: .clear, location: 0),
+                                               .init(color: .black, location: 0.45),
+                                               .init(color: .black, location: 1)],
+                                       startPoint: .top, endPoint: .bottom)
+                    )
+                    .padding(.top, -28)
+                    .ignoresSafeArea(edges: .bottom)
+                    .allowsHitTesting(false)
+            }
     }
 
     /// Shown while the ruler filters the library to one past day.
