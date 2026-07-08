@@ -56,9 +56,9 @@ struct RootShellView: View {
         .searchable(text: $assistantQuery, placement: .toolbar, prompt: "Ask about your reviews…")
         .background(ToolbarSearchCenterer(trigger: columnVisibility))
         .toolbar {
-            // Declared after .searchable so these land right of the search
-            // item: the flexible spacer pushes the export menu to the corner.
-            DefaultToolbarItem(kind: .search)
+            // SwiftUI always appends the search item last, so the probe
+            // reorders the export menu to the trailing corner in AppKit;
+            // the spacer then fills the gap left of the centered field.
             ToolbarSpacer(.flexible)
             ToolbarItem(placement: .primaryAction) {
                 exportMenu
@@ -278,6 +278,15 @@ struct RootShellView: View {
         @discardableResult
         static func centerSearchItem(in window: NSWindow?) -> Bool {
             guard let toolbar = window?.toolbar else { return false }
+            // The export menu must sit in the trailing corner, i.e. after
+            // the search item — an ordering SwiftUI cannot express (it
+            // always appends search last). Move the menu item to the end.
+            if let menuIndex = toolbar.items.firstIndex(where: { $0 is NSMenuToolbarItem }),
+               menuIndex != toolbar.items.count - 1 {
+                let identifier = toolbar.items[menuIndex].itemIdentifier
+                toolbar.removeItem(at: menuIndex)
+                toolbar.insertItem(withItemIdentifier: identifier, at: toolbar.items.count)
+            }
             // Note: do NOT remove the sidebar tracking separators — they are
             // structural, and dropping them scrambles the section layout.
             // Centering is therefore within the content section, which is
