@@ -289,14 +289,23 @@ struct RootShellView: View {
                 $0 is NSSearchToolbarItem || $0.view?.firstSubview(of: NSSearchField.self) != nil
             }
             if let searchIndex = toolbar.items.firstIndex(where: isSearch),
-               searchIndex == toolbar.items.count - 1, searchIndex > 0 {
-                let candidate = toolbar.items[searchIndex - 1]
+               searchIndex == toolbar.items.count - 1 {
+                // Walk back over the flexible spaces to the first real item —
+                // that's the export menu (the tracking separator guards the
+                // sidebar section).
                 let spaces: Set<NSToolbarItem.Identifier> = [.flexibleSpace, .space]
-                if !(candidate is NSTrackingSeparatorToolbarItem),
-                   !spaces.contains(candidate.itemIdentifier) {
-                    let identifier = candidate.itemIdentifier
-                    toolbar.removeItem(at: searchIndex - 1)
-                    toolbar.insertItem(withItemIdentifier: identifier, at: toolbar.items.count)
+                var candidateIndex = searchIndex - 1
+                while candidateIndex >= 0,
+                      spaces.contains(toolbar.items[candidateIndex].itemIdentifier) {
+                    candidateIndex -= 1
+                }
+                if candidateIndex >= 0 {
+                    let candidate = toolbar.items[candidateIndex]
+                    if !(candidate is NSTrackingSeparatorToolbarItem) {
+                        let identifier = candidate.itemIdentifier
+                        toolbar.removeItem(at: candidateIndex)
+                        toolbar.insertItem(withItemIdentifier: identifier, at: toolbar.items.count)
+                    }
                 }
             }
             // Note: do NOT remove the sidebar tracking separators — they are
