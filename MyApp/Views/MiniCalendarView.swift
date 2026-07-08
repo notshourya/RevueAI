@@ -1,16 +1,24 @@
 import SwiftUI
 import SwiftData
 
-/// Apple-Calendar-style mini month calendar pinned at the bottom of the
-/// sidebar. Days with captured notes show a dot; clicking a day (or the
-/// month title) opens the full calendar surface in the detail area.
+/// A floating glass month calendar at the bottom of the sidebar, styled to
+/// match the review cards. Days with captured notes show a dot; clicking a
+/// day (or the month title) opens the full calendar surface.
 struct MiniCalendarView: View {
     var model: CalendarPaneModel
     /// Opens the full calendar surface with this day selected.
     var onOpenDay: (Date) -> Void
 
     @Environment(\.modelContext) private var context
+    @Environment(\.colorScheme) private var colorScheme
     @State private var authRefresh = 0
+
+    private static let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
+
+    /// Same adaptive glass as the review cards.
+    private var glassTint: Color {
+        colorScheme == .dark ? .black.opacity(0.33) : .white.opacity(0.35)
+    }
 
     var body: some View {
         Group {
@@ -19,33 +27,42 @@ struct MiniCalendarView: View {
             case .notDetermined, .denied: permissionRow
             }
         }
+        .glassEffect(.clear.tint(glassTint), in: Self.shape)
         .id(authRefresh)
     }
 
     private var calendarBody: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             header
             grid
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .onAppear { CapturePlanner.prune(now: .now, in: context) }
     }
 
     private var header: some View {
         HStack {
-            Button { model.stepMonth(by: -1) } label: { Image(systemName: "chevron.left") }
-                .help("Previous month")
+            Button { withAnimation(.smooth) { model.stepMonth(by: -1) } } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .help("Previous month")
             Spacer()
             Button {
                 onOpenDay(model.selectedDay)
             } label: {
-                Text(model.monthTitle).font(.system(size: 12, weight: .semibold))
+                Text(model.monthTitle)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.primary)
             }
             .help("Open the calendar")
             Spacer()
-            Button { model.stepMonth(by: 1) } label: { Image(systemName: "chevron.right") }
-                .help("Next month")
+            Button { withAnimation(.smooth) { model.stepMonth(by: 1) } } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+            }
+            .help("Next month")
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
@@ -54,7 +71,7 @@ struct MiniCalendarView: View {
     private var grid: some View {
         let dotDays = model.daysWithNotes(in: context)
         let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
-        return LazyVGrid(columns: columns, spacing: 2) {
+        return LazyVGrid(columns: columns, spacing: 3) {
             ForEach(Calendar.current.veryShortWeekdaySymbols, id: \.self) { symbol in
                 Text(symbol)
                     .font(.system(size: 9, weight: .semibold))
@@ -64,7 +81,7 @@ struct MiniCalendarView: View {
                 if let day {
                     dayCell(day, hasNotes: dotDays.contains(Calendar.current.component(.day, from: day)))
                 } else {
-                    Color.clear.frame(height: 22)
+                    Color.clear.frame(height: 24)
                 }
             }
         }
@@ -79,18 +96,18 @@ struct MiniCalendarView: View {
         } label: {
             VStack(spacing: 1) {
                 Text("\(Calendar.current.component(.day, from: day))")
-                    .font(.system(size: 10, weight: isToday ? .bold : .regular))
-                    .frame(width: 18, height: 16)
+                    .font(.system(size: 11, weight: isToday ? .bold : .medium))
+                    .frame(width: 21, height: 18)
                     .background(
                         Circle().fill(isToday ? Color.red.opacity(0.85)
                                       : isSelected ? Color.accentColor.opacity(0.35) : .clear)
                     )
                     .foregroundStyle(isToday ? .white : .primary)
                 Circle()
-                    .fill(hasNotes ? Theme.accent : .clear)
-                    .frame(width: 3, height: 3)
+                    .fill(hasNotes ? Color.accentColor : .clear)
+                    .frame(width: 3.5, height: 3.5)
             }
-            .frame(maxWidth: .infinity, minHeight: 22)
+            .frame(maxWidth: .infinity, minHeight: 24)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -109,7 +126,7 @@ struct MiniCalendarView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
-        .padding(10)
+        .padding(14)
         .help("RevueAI shows your meetings so captures can be planned and titled. Events are never modified.")
     }
 }

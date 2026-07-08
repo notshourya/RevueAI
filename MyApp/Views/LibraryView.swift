@@ -98,11 +98,9 @@ struct LibraryPane: View {
     // MARK: - Bottom dock (mini calendar, always present)
 
     private var bottomDock: some View {
-        VStack(spacing: 0) {
-            Divider()
-            MiniCalendarView(model: calendarModel, onOpenDay: onOpenCalendar)
-        }
-        .background(.ultraThinMaterial)
+        MiniCalendarView(model: calendarModel, onOpenDay: onOpenCalendar)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 10)
     }
 
     // MARK: - Empty state
@@ -149,12 +147,12 @@ private struct ReviewCard: View {
 
     /// Deepens the glass in dark mode, brightens it in light mode.
     private var glassTint: Color {
-        colorScheme == .dark ? .black.opacity(0.25) : .white.opacity(0.35)
+        colorScheme == .dark ? .black.opacity(0.33) : .white.opacity(0.35)
     }
 
     private var itemCount: Int { note.actionItems?.count ?? 0 }
     private var openCount: Int { (note.openQuestions ?? []).filter { !$0.isResolved }.count }
-    private static let shape = RoundedRectangle(cornerRadius: 32, style: .continuous)
+    private static let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -183,9 +181,9 @@ private struct ReviewCard: View {
             .foregroundStyle(.secondary)
             .padding(.top, 2)
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular.tint(glassTint), in: Self.shape)
+        .glassEffect(.clear.tint(glassTint), in: Self.shape)
         .overlay(Self.shape.strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2))
         .contentShape(Self.shape)
     }
