@@ -123,6 +123,21 @@ retry queue in v1.
 
 ## UI (native, glass-styled, no new windows)
 
+- **Sidebar dock swap.** The date ruler leaves the sidebar's bottom dock:
+  it moves, functionally unchanged (scrubbing, haptics, day filter,
+  agenda popover, meeting arming), into a calendar-button popover in the
+  sidebar toolbar (`ToolbarItem` with `calendar` icon, popover hosts the
+  existing `DateRulerView`). The freed dock becomes the **destinations
+  strip**: one glass chip per configured destination (preset icon +
+  name), kept under the existing progressive-blur scrim.
+  - **Drag-to-file:** dragging an action item from the board onto an
+    item-kind chip files it to that destination — the same drag language
+    as the board's drag-to-complete (reuses `ActionItemTransfer`).
+  - Chips show a brief pulse on successful sends (including auto-rule
+    sends) and a persistent small red dot on the latest failure until
+    its record is viewed or retried.
+  - Empty state (no destinations): a single quiet "Add a destination"
+    chip opening Settings → Destinations.
 - **Settings → Destinations**: list of configured destinations with
   preset icons; add flow = preset picker sheet → minimal field form
   (only what that preset needs) → optional template editing (monospaced
