@@ -7,22 +7,37 @@ import AppKit
 /// status color, and the board's item rows are the only glass surfaces.
 struct NoteDetailView: View {
     @Bindable var note: ReviewNote
+    /// Live page width so the layout re-flows when the window resizes or
+    /// the sidebar collapses.
+    @State private var pageWidth: CGFloat = 0
+
+    private var isWide: Bool { pageWidth >= 1000 }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: 30) {
                 header
                 if note.status == .processing { processingRow }
-                summaryStrip
-                decisionsStrip
+                if isWide && !note.summary.isEmpty && !note.sortedDecisions.isEmpty {
+                    // Wide: summary and decisions share the row instead of
+                    // stacking into a long left-hugging column.
+                    HStack(alignment: .top, spacing: 56) {
+                        summaryStrip
+                        decisionsStrip
+                            .frame(maxWidth: max(340, pageWidth * 0.34), alignment: .leading)
+                    }
+                } else {
+                    summaryStrip
+                    decisionsStrip
+                }
                 ReviewBoard(note: note)
                 Color.clear.frame(height: 24)
             }
-            .padding(.horizontal, 32)
-            .padding(.vertical, 28)
-            .frame(maxWidth: 1300, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.horizontal, 40)
+            .padding(.vertical, 34)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
         .scrollContentBackground(.hidden)
         .scrollEdgeEffectStyle(.soft, for: .all)
         .background { PremiumBackground() }
@@ -32,21 +47,21 @@ struct NoteDetailView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 VerdictBadge(verdict: note.verdict)
                 Text(note.date.formatted(date: .abbreviated, time: .shortened))
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.tertiary)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
                 if note.durationSeconds > 0 {
                     Text("· \(durationText)")
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.tertiary)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(.secondary)
                 }
                 Spacer()
             }
             TextField("Title", text: $note.title, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 30, weight: .bold, design: .rounded))
+                .font(.system(size: 40, weight: .heavy, design: .rounded))
             statChips
         }
     }
@@ -71,10 +86,10 @@ struct NoteDetailView: View {
 
     private func statChip(_ text: String, systemImage: String, tint: Color) -> some View {
         Label(text, systemImage: systemImage)
-            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
             .foregroundStyle(tint)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
             .glassEffect(.regular, in: .capsule)
     }
 
@@ -98,17 +113,17 @@ struct NoteDetailView: View {
     @ViewBuilder
     private var summaryStrip: some View {
         if !note.summary.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
                 Label("SUMMARY", systemImage: "text.alignleft")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .kerning(0.8)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 Text(note.summary)
-                    .font(.system(size: 16, weight: .regular, design: .rounded))
-                    .lineSpacing(6)
-                    .foregroundStyle(.primary.opacity(0.85))
+                    .font(.system(size: 18, weight: .regular, design: .rounded))
+                    .lineSpacing(8)
+                    .foregroundStyle(.primary)
                     .textSelection(.enabled)
-                    .frame(maxWidth: 820, alignment: .leading)
+                    .frame(maxWidth: 900, alignment: .leading)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -120,9 +135,9 @@ struct NoteDetailView: View {
         if !decisions.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Label("DECISIONS", systemImage: "checkmark.seal")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
                     .kerning(0.8)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 ForEach(decisions) { decision in
                     DecisionRow(decision: decision)
                 }
@@ -140,12 +155,12 @@ private struct DecisionRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.success.opacity(0.85))
+                .font(.system(size: 15))
+                .foregroundStyle(Theme.success)
             Text(decision.statement)
-                .font(.system(size: 15, design: .rounded))
+                .font(.system(size: 16, weight: .medium, design: .rounded))
         }
-        .foregroundStyle(.primary.opacity(0.92))
+        .foregroundStyle(.primary)
         .contentShape(Rectangle())
         .onTapGesture { showDetail = true }
         .popover(isPresented: $showDetail, arrowEdge: .trailing) {
